@@ -5,7 +5,7 @@
 ######## different ways, with portions of code dedicated to determining ###############
 ######## hypsometrically weighted nutrient concentrations. Additionally, ##############
 ######## oxygen is investigated in relation to both nutrient concentrations ###########
-######## and whole lake trends during iceon. ##########################################
+######## and whole lake trends during iceon.Oxygen too! ##########################################
 #######################################################################################
 
 #################### Information about NTL-LTER data used here ########################
