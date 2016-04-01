@@ -38,7 +38,11 @@ rm(list = ls())
 
 #setwd("D:Labou//UnderIce/Phys-Chem-Bio/NTL-LTER")
 #base_dir<-"/Users/steve.powers/Desktop/Sandboxes/2016Mar8pm_IcePowers"
-base_dir<-"/Users/spowers/Desktop/Sandboxes/2016Mar16"
+
+start_dir<-as.character(getwd())
+base_dir<-substr(start_dir,1,nchar(start_dir)-nchar("/Scripts"))
+data_dir<-paste(base_dir,"/Data",sep="")
+#base_dir<-"/Users/spowers/Desktop/Sandboxes/2016Mar16"
 #data_dir<-paste(c(base_dir,"/DataAsText"),collapse="")
 
 setwd(base_dir)
@@ -51,6 +55,9 @@ library(tidyr)
 #############################################################
 
 #read in PDO data
+setwd(data_dir)
+data.agg.orig <- read.csv("full_under_ice_data.csv", stringsAsFactors = FALSE)
+
 PDO.orig <- read.csv("PDO.csv", stringsAsFactors = FALSE)
 PDO<-PDO.orig
 PDO<-PDO %>% gather(month,value,-YEAR)
@@ -216,6 +223,7 @@ write.csv(mix.df,file="mix.csv")
 mix<-read.csv("mix.csv")
 mix<-mix[,-1]
 
+setwd(base_dir)
 
 
 #for now, not worried about whether values are flagged
@@ -264,8 +272,7 @@ data.lter.nutrients$daynum_wateryr<-data.lter.nutrients$daynum+round(365*0.25,di
 data.lter.nutrients$daynum_wateryr[which(data.lter.nutrients$daynum_wateryr>365)]<-365-data.lter.nutrients$daynum_wateryr[which(data.lter.nutrients$daynum_wateryr>365)]
 
 ###### under-ice ecology aggregate data for same lake subset ######
-
-data.agg <- read.csv("full_under_ice_data.csv", stringsAsFactors = FALSE)
+data.agg<-data.agg.orig
 
 #for now, selecting variables there were pre-aggregated from aggregate data set
 #could easily go back and re-create seasonal averages for other variables if needed
@@ -359,12 +366,6 @@ data.ice.sub.agg <- data.subset.ice %>%
                   as.data.frame()
 
 #this has values - averaged over entire *SAMPLED* water column
-
-#####################################################################################################
-#AM A LITTLE CONCERNED ABOUT HOW END MONTH WAS CALCULATED...GUESS...WE CAN DOUBLE CHECK...
-#ALSO CHECK EVENT COLUMN - MAYBE LIMIT TO JUST CHEM NOT QUARTERLY INCLUDED?
-#####################################################################################################
-
 
 #############################################################################
 ##################### types of N - breakdown TDP ############################
@@ -616,7 +617,6 @@ dev.off()
 
 ###########################
 ###########################
-
 
 dataplot<-data.NPtype.hyps
 dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","Lake Mendota","Lake Wingra"))
@@ -978,454 +978,3 @@ NPdiss.shallow.ONI_2yr
 
 #############################
 ##############################
-
-do<-0
-if(do==1){
-
-dataplot<-data.NPtype.deep
-dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","Lake Mendota","Lake Wingra"))
-dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("NO3N","NH4N","DIN","TDN")))
-#dataplot<-dataplot[-which(is.na(dataplot$value)==TRUE),]
-
-Ndeep <-  ggplot(dataplot, aes(x=days.since.iceon.start, y=value)) +
-  geom_point(aes(color = UMLbottom)) +
-  #  geom_text(aes(color=o2,x=days.since.iceon.start, y=value,label=substr(year,3,4))) +
-  theme_bw()+scale_color_gradient(name = "UML bottom")+
-  geom_smooth(col="black")+#aes(color = form)) +
-  facet_grid(lakename~form,scales="free_y") +
-  theme(strip.text.x=element_text())+
-  ggtitle("under ice - deep")
-Ndeep
-
-dataplot<-data.NPtype.shallow
-dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","Lake Mendota","Lake Wingra"))
-dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("TDP")))
-#dataplot<-dataplot[-which(is.na(dataplot$value)==TRUE),]
-
-Pshallow <-  ggplot(dataplot, aes(x=days.since.iceon.start, y=value)) +
-  geom_point(aes(color = UMLbottom)) +
-  #  geom_text(aes(color=o2,x=days.since.iceon.start, y=value,label=substr(year,3,4))) +
-  theme_bw()+scale_color_gradient(name = "UML bottom")+
-  geom_smooth(col="black")+#aes(color = form)) +
-  facet_grid(lakename~form,scales="free_y") +
-  theme(strip.text.x=element_text())+
-  ggtitle("under ice - deep")
-Pshallow
-
-dataplot<-data.NPtype.hyps
-dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","Lake Mendota","Lake Wingra"))
-dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("TDP")))
-#dataplot<-dataplot[-which(is.na(dataplot$value)==TRUE),]
-
-Phyps <-  ggplot(dataplot, aes(x=days.since.iceon.start, y=value)) +
-  geom_point(aes(color = UMLbottom)) +
-  #  geom_text(aes(color=o2,x=days.since.iceon.start, y=value,label=substr(year,3,4))) +
-  theme_bw()+scale_color_gradient(name = "UML bottom")+
-  geom_smooth(col="black")+#aes(color = form)) +
-  facet_grid(lakename~form,scales="free_y") +
-  theme(strip.text.x=element_text())+
-  ggtitle("under ice - hyps weighted")
-Phyps
-
-###########################
-
-
-test1<-subset(data.NPtype.hyps,data.NPtype.hyps$lakename=="Sparkling Lake" & data.NPtype.hyps$NP_diss>0) %>% as.data.frame()
-test2<-subset(data.NPtype.shallow,data.NPtype.shallow$lakename=="Sparkling Lake" & data.NPtype.shallow$NP_diss>0) %>% as.data.frame()
-test3<-subset(data.NPtype.deep,data.NPtype.deep$lakename=="Sparkling Lake" & data.NPtype.deep$NP_diss>0) %>% as.data.frame()
-
-
-############################
-################################
-
-do<-0
-
-if(do==1){
-
-
-
-
-
-
-
-dataplot<-data.NPtype.deep
-dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","Lake Mendota","Lake Wingra"))
-dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("NO3N","NH4N","DIN","DON","TDN")))
-dataplot<-dataplot[-which(is.na(dataplot$value)==TRUE),]
-
-Ndeep <-  ggplot(dataplot, aes(x=days.since.iceon.start, y=value)) +
-  geom_point(aes(color = UMLbottom)) +
-  #  geom_text(aes(color=o2,x=days.since.iceon.start, y=value,label=substr(year,3,4))) +
-  theme_bw()+scale_color_gradient(name = "UML bottom")+
-  #    geom_smooth(aes(color = variable)) +
-  facet_grid(lakename~form,scales="free_y") +
-  theme(strip.text.x=element_text())+
-  ggtitle("under ice - deep")
-
-Ndeep
-
-data.N.labelphotic <- data.N.iceon %>% 
-  mutate(photic = ifelse(depth <= photicdepth, 1, 0))
-#different depths
-data.N.alldepths <- data.N.iceon %>% select(lakename, year, days.since.iceon.start, daynum_wateryr, depth, NO3N, NH4N, DIN, DON, TDN, o2,wtemp_Oct,wtemp_Aug,wtemp_Jul,wtemp_Jun,o2_Oct,o2_Aug,o2_Jul,o2_Jun,therm,wtemp_range)
-data.N.labelphotic <- data.N.iceon %>% 
-  dplyr::mutate(photic = ifelse(depth <= photicdepth, 1, 0))
-data.Ntype.photic <- filter(data.N.labelphotic, photic == 1)  %>% #for photic depths (no avering or anything)
-  select(lakename, year, days.since.iceon.start, daynum_wateryr, depth, NO3N, NH4N, DIN, DON, TDN, o2,wtemp_Oct,wtemp_Aug,wtemp_Jul,wtemp_Jun,o2_Oct,o2_Aug,o2_Jul,o2_Jun,therm,wtemp_range)
-data.Ntype.nonphotic <- filter(data.N.labelphotic, photic == 0) %>% #for nonphotic depths (no averaging)
-  select(lakename, year, sampledate, days.since.iceon.start, daynum_wateryr, depth, NO3N, NH4N, DIN, DON, TDN, o2, wtemp_Oct,wtemp_Aug,wtemp_Jul,wtemp_Jun,o2_Oct,o2_Aug,o2_Jul,o2_Jun,therm,wtemp_range)
-data.Ntype.deep <- data.Ntype.nonphotic %>%  #for deepest depths
-  group_by(lakename, sampledate) %>% 
-  dplyr::mutate(maxdepth = max(depth, na.rm = T)) %>% 
-  dplyr::filter(depth >= (maxdepth-2)) %>% 
-  dplyr::ungroup() %>% 
-  select(lakename, year, days.since.iceon.start, daynum_wateryr, depth, NO3N, NH4N, DIN, DON, TDN, o2, wtemp_Oct,wtemp_Aug,wtemp_Jul,wtemp_Jun,o2_Oct,o2_Aug,o2_Jul,o2_Jun,therm,wtemp_range)
-
-
-data.P.iceon <- data.N.iceon
-data.P.labelphotic <- data.P.iceon %>% 
-  dplyr::mutate(photic = ifelse(depth <= photicdepth, 1, 0))
-#different depths
-data.P.alldepths <- data.P.iceon %>% select(lakename, year, days.since.iceon.start, daynum_wateryr, depth, TDP, o2, wtemp_Oct,wtemp_Aug,wtemp_Jul,wtemp_Jun,o2_Oct,o2_Aug,o2_Jul,o2_Jun,o2_Oct,o2_Aug,o2_Jul,o2_Jun,therm,wtemp_range)
-data.P.labelphotic <- data.P.iceon %>% 
-  dplyr::mutate(photic = ifelse(depth <= photicdepth, 1, 0))
-data.Ptype.photic <- filter(data.P.labelphotic, photic == 1)  %>% #for photic depths (no avering or anything)
-  select(lakename, year, days.since.iceon.start, daynum_wateryr, depth, TDP, o2, wtemp_Oct,wtemp_Aug,wtemp_Jul,wtemp_Jun,o2_Oct,o2_Aug,o2_Jul,o2_Jun,therm,wtemp_range)
-data.Ptype.nonphotic <- filter(data.P.labelphotic, photic == 0) %>% #for nonphotic depths (no averaging)
-  select(lakename, year, sampledate, days.since.iceon.start, daynum_wateryr, depth, TDP, o2, wtemp_Oct,wtemp_Aug,wtemp_Jul,wtemp_Jun,o2_Oct,o2_Aug,o2_Jul,o2_Jun,therm,wtemp_range)
-data.Ptype.deep <- data.Ptype.nonphotic %>%  #for deepest depths
-  group_by(lakename, sampledate) %>% 
-  dplyr::mutate(maxdepth = max(depth, na.rm = T)) %>% 
-  dplyr::filter(depth >= (maxdepth-2)) %>% 
-  dplyr::ungroup() %>% 
-  select(lakename, year, days.since.iceon.start, daynum_wateryr, depth, TDP, o2, wtemp_Oct,wtemp_Aug,wtemp_Jul,wtemp_Jun,o2_Oct,o2_Aug,o2_Jul,o2_Jun,therm,wtemp_range)
-
-data.NP.iceon <- data.N.iceon
-data.NP.iceon$TP[which(data.NP.iceon$TP==0)]<-0.5
-data.NP.iceon$TDP[which(data.NP.iceon$TDP==0)]<-0.5
-data.NP.iceon$NP_total<-(data.NP.iceon$TN/14)/(data.NP.iceon$TP/31)
-data.NP.iceon$NP_diss<-(data.NP.iceon$TDN/14)/(data.NP.iceon$TDP/31)
-data.NP.labelphotic <- data.NP.iceon %>% 
-  dplyr::mutate(photic = ifelse(depth <= photicdepth, 1, 0))
-#different depths
-data.NP.alldepths <- data.NP.iceon %>% select(lakename, year, days.since.iceon.start, daynum_wateryr, depth, NP_total,NP_diss, o2, wtemp_Oct,wtemp_Aug,wtemp_Jul,wtemp_Jun,o2_Oct,o2_Aug,o2_Jul,o2_Jun,therm,wtemp_range)
-data.NP.labelphotic <- data.NP.iceon %>% 
-  dplyr::mutate(photic = ifelse(depth <= photicdepth, 1, 0))
-data.NPtype.photic <- filter(data.NP.labelphotic, photic == 1)  %>% #for photic depths (no avering or anything)
-  select(lakename, year, days.since.iceon.start, daynum_wateryr, depth, NP_total, NP_diss, o2, wtemp_Oct,wtemp_Aug,wtemp_Jul,wtemp_Jun,o2_Oct,o2_Aug,o2_Jul,o2_Jun,therm,wtemp_range)
-data.NPtype.nonphotic <- filter(data.NP.labelphotic, photic == 0) %>% #for nonphotic depths (no averaging)
-  select(lakename, year, sampledate, days.since.iceon.start, daynum_wateryr, depth, NP_total, NP_diss, o2, wtemp_Oct,wtemp_Aug,wtemp_Jul,wtemp_Jun,o2_Oct,o2_Aug,o2_Jul,o2_Jun,therm,wtemp_range)
-data.NPtype.deep <- data.NPtype.nonphotic %>%  #for deepest depths
-  group_by(lakename, sampledate) %>% 
-  dplyr::mutate(maxdepth = max(depth, na.rm = T)) %>% 
-  dplyr::filter(depth >= (maxdepth-2)) %>% 
-  dplyr::ungroup() %>% 
-  select(lakename, year, days.since.iceon.start, daynum_wateryr, depth, NP_total, NP_diss, o2, wtemp_Oct,wtemp_Aug,wtemp_Jul,wtemp_Jun,o2_Oct,o2_Aug,o2_Jul,o2_Jun,therm,wtemp_range)
-
-data.NPtype.hyps <- data.N.iceon 
-data.NPtype.hyps$epiTF <- as.numeric(data.NPtype.hyps$depth<=data.NPtype.hyps$epidepth)
-
-data.NPtype.hyps[which(data.NPtype.hyps$lakename=="Allequash Lake"),]$hypodepth<-7
-data.NPtype.hyps[which(data.NPtype.hyps$lakename=="Big Muskellunge Lake"),]$hypodepth<-19
-data.NPtype.hyps[which(data.NPtype.hyps$lakename=="Crystal Lake"),]$hypodepth<-19
-data.NPtype.hyps[which(data.NPtype.hyps$lakename=="Sparkling Lake"),]$hypodepth<-18
-data.NPtype.hyps[which(data.NPtype.hyps$lakename=="Trout Lake"),]$hypodepth<-32
-
-data.NPtype.hyps$hypoTF <- as.numeric(data.NPtype.hyps$depth<=data.NPtype.hyps$hypodepth & data.NPtype.hyps$depth>data.NPtype.hyps$epidepth)
-
-
-data.NPtype.hyps<- data.NPtype.hyps %>% select(-depth) %>%
-  group_by(lakename, sampledate,epidepth,hypodepth,epiTF,hypoTF,days.since.iceon.start,deltad,wtemp_range) %>% 
-  dplyr::summarize(NO3N.wt.shallow = mean(NO3N*epidepth*epiTF,na.rm=TRUE),
-                   NO3N.wt.deep = mean(NO3N*hypoTF*(hypodepth-epidepth),na.rm=TRUE),
-                   NO3N = ifelse(is.na(NO3N.wt.shallow),mean(NO3N*hypodepth*0.5,na.rm=TRUE),NO3N.wt.shallow)+
-                     ifelse(is.na(NO3N.wt.deep),mean(NO3N*hypodepth*0.5,na.rm=TRUE),NO3N.wt.deep),
-                   
-                   NH4N.wt.shallow = mean(NH4N*epidepth*epiTF,na.rm=TRUE),
-                   NH4N.wt.deep = mean(NH4N*hypoTF*(hypodepth-epidepth),na.rm=TRUE),
-                   NH4N = ifelse(is.na(NH4N.wt.shallow),mean(NH4N*hypodepth*0.5,na.rm=TRUE),NH4N.wt.shallow)+
-                     ifelse(is.na(NH4N.wt.deep),mean(NH4N*hypodepth*0.5,na.rm=TRUE),NH4N.wt.deep),
-                   
-                   TDN.wt.shallow = mean(TDN*epidepth*epiTF,na.rm=TRUE),
-                   TDN.wt.deep = mean(TDN*hypoTF*(hypodepth-epidepth),na.rm=TRUE),
-                   TDN = ifelse(is.na(TDN.wt.shallow),mean(TDN*hypodepth*0.5,na.rm=TRUE),TDN.wt.shallow)+
-                     ifelse(is.na(TDN.wt.deep),mean(TDN*hypodepth*0.5,na.rm=TRUE),TDN.wt.deep),
-                   
-                   DIN.wt.shallow = mean(DIN*epidepth*epiTF,na.rm=TRUE),
-                   DIN.wt.deep = mean(DIN*hypoTF*(hypodepth-epidepth),na.rm=TRUE),
-                   DIN = ifelse(is.na(DIN.wt.shallow),mean(DIN*hypodepth*0.5,na.rm=TRUE),DIN.wt.shallow)+
-                     ifelse(is.na(DIN.wt.deep),mean(DIN*hypodepth*0.5,na.rm=TRUE),DIN.wt.deep),
-                   
-                   DON.wt.shallow = mean(DON*epidepth*epiTF,na.rm=TRUE),
-                   DON.wt.deep = mean(DON*hypoTF*(hypodepth-epidepth),na.rm=TRUE),
-                   DON = ifelse(is.na(DON.wt.shallow),mean(DON*hypodepth*0.5,na.rm=TRUE),DON.wt.shallow)+
-                     ifelse(is.na(DON.wt.deep),mean(DON*hypodepth*0.5,na.rm=TRUE),DON.wt.deep),
-                   
-                   TN.wt.shallow = mean(TN*epidepth*epiTF,na.rm=TRUE),
-                   TN.wt.deep = mean(TN*hypoTF*(hypodepth-epidepth),na.rm=TRUE),
-                   TN = ifelse(is.na(TN.wt.shallow),mean(TN*hypodepth*0.5,na.rm=TRUE),TN.wt.shallow)+
-                     ifelse(is.na(TN.wt.deep),mean(TN*hypodepth*0.5,na.rm=TRUE),TN.wt.deep),
-                   
-                   TDP.wt.shallow = mean(TDP*epidepth*epiTF,na.rm=TRUE),
-                   TDP.wt.deep = mean(TDP*hypoTF*(hypodepth-epidepth),na.rm=TRUE),
-                   TDP = ifelse(is.na(TDP.wt.shallow),mean(TDP*hypodepth*0.5,na.rm=TRUE),TDP.wt.shallow)+
-                     ifelse(is.na(TDP.wt.deep),mean(TDP*hypodepth*0.5,na.rm=TRUE),TDP.wt.deep),
-                   
-                   TP.wt.shallow = mean(TP*epidepth*epiTF,na.rm=TRUE),
-                   TP.wt.deep = mean(TP*hypoTF*(hypodepth-epidepth),na.rm=TRUE),
-                   TP = ifelse(is.na(TP.wt.shallow),mean(TP*hypodepth*0.5,na.rm=TRUE),TP.wt.shallow)+
-                     ifelse(is.na(TP.wt.deep),mean(TP*hypodepth*0.5,na.rm=TRUE),TP.wt.deep)
-  ) %>% as.data.frame()
-
-
-dataplot<-data.NPtype.hyps
-dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","Lake Mendota","Lake Wingra"))
-dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("NO3N","NH4N","DIN","TDN")))
-#dataplot<-dataplot[-which(is.na(dataplot$value)==TRUE),]
-
-Nhyps <-  ggplot(dataplot, aes(x=days.since.iceon.start, y=value)) +
-  geom_point(aes(color=deltad))+#aes(x=days.since.iceon.start, y=value),colour=epidepth)+#aes(color = wtemp_range)) +
-#)+#(aes(),color=epidepth)+#aes(x=days.since.iceon.start, y=value),color=epidepth)+#aes(color = wtemp_range)) +
-  #  geom_text(aes(color=o2,x=days.since.iceon.start, y=value,label=substr(year,3,4))) +
-#  theme_bw()+#scale_color_gradient(name = "O2 mg/L")+
-  #    geom_smooth(aes(color = variable)) +
-  facet_grid(lakename~form,scales="free_y") +
-  theme(strip.text.x=element_text())+
-  ggtitle("under ice - deep")
-
-Nhyps
-
-dataplot<-data.NPtype.hyps
-dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","Lake Mendota","Lake Wingra"))
-#dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("NO3N","NH4N","DIN","DON","TDN")))
-
-NPhyps.check <-  ggplot(dataplot, aes(x=days.since.iceon.start, y=UMLbottom)) +
-  geom_point(shape=2,color="green")+#aes(color="green"))+#aes(color = wtemp_range)) +
-  geom_point(aes(x=days.since.iceon.start, y=maxdepth),color="blue")+
-  #  geom_text(aes(color=o2,x=days.since.iceon.start, y=value,label=substr(year,3,4))) +
-  theme_bw()+scale_color_gradient(name = "O2 mg/L")+
-  #    geom_smooth(aes(color = variable)) +
-  facet_grid(~lakename,scales="free_y") +
-  theme(strip.text.x=element_text())+
-  ggtitle("under ice - deep")
-
-NPhyps.check
-
-dataplot<-data.NPtype.hyps
-dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","Lake Mendota","Lake Wingra"))
-dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("TDP")))
-#dataplot<-dataplot[-which(is.na(dataplot$value)==TRUE),]
-
-Phyps <-  ggplot(dataplot, aes(x=days.since.iceon.start, y=value)) +
-  geom_point()+#aes(color = wtemp_range)) +
-  #  geom_text(aes(color=o2,x=days.since.iceon.start, y=value,label=substr(year,3,4))) +
-  theme_bw()+scale_color_gradient(name = "O2 mg/L")+
-  #    geom_smooth(aes(color = variable)) +
-  facet_grid(lakename~form,scales="free_y") +
-  theme(strip.text.x=element_text())+
-  ggtitle("under ice - deep")
-
-Phyps
-
-
-dataplot<-data.Ntype.deep
-dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","Lake Mendota"))
-dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("NO3N","NH4N","DIN","DON","TDN","TN")))
-dataplot<-dataplot[-which(is.na(dataplot$value)==TRUE),]
-
-Ndeep <-  ggplot(dataplot, aes(x=days.since.iceon.start, y=value)) +
-  geom_point(aes(color = wtemp_range)) +
-#  geom_text(aes(color=o2,x=days.since.iceon.start, y=value,label=substr(year,3,4))) +
-  theme_bw()+scale_color_gradient(name = "O2 mg/L")+
-  #    geom_smooth(aes(color = variable)) +
-  facet_grid(lakename~form,scales="free_y") +
-  theme(strip.text.x=element_text())+
-  ggtitle("under ice - deep")
-
-Ndeep
-
-dataplot<-data.Ntype.photic
-dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","Lake Mendota","Lake Wingra"))
-dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("NO3N","NH4N","DIN","DON","TDN")))
-
-Nshallow <-  ggplot(dataplot, aes(x=days.since.iceon.start, y=value)) +
-  geom_point(aes(color = wtemp_range)) +
-  theme_bw()+scale_color_gradient(name = "O2 mg/L")+
-  #    geom_smooth(aes(color = variable)) +
-  facet_grid(lakename~form,scales="free_y") +
-  theme(strip.text.x=element_text())+
-  ggtitle("under ice - shallow")
-
-Nshallow
-
-dataplot<-data.NPtype.hyps
-dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","Lake Mendota","Lake Wingra"))
-dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("NO3N.wt.shallow","NH4N.wt.shallow","DIN.wt.shallow","DON.wt.shallow","TDN.wt.shallow")))
-
-Nshallow <-  ggplot(dataplot, aes(x=days.since.iceon.start, y=value/epidepth)) +
-  geom_point(aes(color = wtemp_range)) +
-  theme_bw()+scale_color_gradient(name = "O2 mg/L")+
-  #    geom_smooth(aes(color = variable)) +
-  facet_grid(lakename~form,scales="free_y") +
-  theme(strip.text.x=element_text())+
-  ggtitle("under ice - shallow")
-
-Nshallow
-
-dataplot<-data.Ptype.deep
-dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","Lake Mendota","Lake Wingra"))
-dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("TDP")))
-
-Pdeep <-  ggplot(dataplot, aes(x=days.since.iceon.start, y=value)) +
-  geom_point(aes(color = o2)) +
-  theme_bw()+scale_color_gradient(name = "O2 mg/L")+
-  #    geom_smooth(aes(color = variable)) +
-  facet_grid(lakename~form,scales="free_y") +
-  theme(strip.text.x=element_text())+
-  ggtitle("under ice - deep")
-
-Pdeep
-
-dataplot<-data.Ptype.photic
-dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","Lake Mendota"))
-dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("TDP")))
-
-Pshallow <-  ggplot(dataplot, aes(x=days.since.iceon.start, y=value)) +
-  geom_point(aes(color = o2)) +
-  theme_bw()+scale_color_gradient(name = "O2 mg/L")+
-  #    geom_smooth(aes(color = variable)) +
-  facet_grid(lakename~form,scales="free_y") +
-  theme(strip.text.x=element_text())+
-  ggtitle("under ice - shallow")
-
-Pshallow
-
-
-dataplot<-data.NPtype.deep
-dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","Lake Mendota","Lake Wingra"))
-dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("NP_total","NP_diss")))
-
-NPdeep <-  ggplot(dataplot, aes(x=days.since.iceon.start, y=log10(value))) +
-  geom_point(aes(color = o2)) +
-  theme_bw()+scale_color_gradient(name = "O2 mg/L")+
-  #    geom_smooth(aes(color = variable)) +
-  facet_grid(lakename~form,scales="free_y") +
-  theme(strip.text.x=element_text())+
-  ggtitle("under ice - deep")
-
-NPdeep
-
-dataplot<-data.NPtype.photic
-dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","Lake Mendota","Lake Wingra"))
-dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("NP_total","NP_diss")))
-
-NPshallow <-  ggplot(dataplot, aes(x=days.since.iceon.start, y=log10(value))) +
-  geom_point(aes(color = o2)) +
-  theme_bw()+scale_color_gradient(name = "O2 mg/L")+
-  #    geom_smooth(aes(color = variable)) +
-  facet_grid(lakename~form,scales="free_y") +
-  theme(strip.text.x=element_text())+
-  ggtitle("under ice - shallow")
-
-NPshallow
-
-data.NPtype.deep_diss<-data.NPtype.deep
-data.NPtype.deep_diss$depth<-"deep"
-data.NPtype.shallow_diss<-data.NPtype.photic
-data.NPtype.shallow_diss$depth<-"shallow"
-
-data.NPdiss.depth<-rbind(data.NPtype.deep_diss,data.NPtype.shallow_diss)
-data.NPdiss.depth<-data.NPdiss.depth[,-which(names(data.NPdiss.depth)== "NP_total")]
-
-dataplot <- data.NPdiss.depth
-dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","Lake Mendota","Lake Wingra"))
-dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("NP_diss")))
-
-NPdiss.depth <-  ggplot(dataplot, aes(x=days.since.iceon.start, y=log10(value))) +
-  geom_point(aes(color = o2)) +
-  theme_bw()+scale_color_gradient(name = "O2 mg/L")+
-  #    geom_smooth(aes(color = variable)) +
-  facet_grid(lakename~depth) +
-  theme(strip.text.x=element_text())+
-  ggtitle("NP diss")+
-  geom_abline(intercept=log10(15),slope=0,linetype=2)
-
-NPdiss.depth
-
-
-############################
-
-#############################
-
-do<-0
-if(do==1){
-
-dataplot<-data.Ntype.deep
-dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","Lake Mendota"))
-NO3N_breakdown_iceon_deep <-  ggplot(dataplot, aes(days.since.iceon.start, NO3N)) +
-  geom_point(aes(color = o2)) +
-  theme_bw()+
-  #    geom_smooth(aes(color = variable)) +
-  facet_wrap(~lakename,ncol=1) +
-  ggtitle("no3no2 iceon - deep")
-
-NH4N_breakdown_iceon_deep <-  ggplot(dataplot, aes(days.since.iceon.start, NH4N)) +
-  geom_point(aes(color = o2)) +
-  theme_bw()+
-  #    geom_smooth(aes(color = variable)) +
-  facet_wrap(~lakename,ncol=1) +
-  ggtitle("nh4n iceon - deep")
-
-TDN_breakdown_iceon_deep <-  ggplot(dataplot, aes(days.since.iceon.start, TDN)) +
-  geom_point(aes(color = o2)) +
-  theme_bw()+
-  #    geom_smooth(aes(color = variable)) +
-  facet_wrap(~lakename,ncol=1) +
-  ggtitle("tdn iceon - deep")
-
-dataplot<-data.N.alldepths
-dataplot<-data.Ntype.photic 
-
-NO3N_breakdown_iceon_shallow <- ggplot(dataplot, aes(days.since.iceon.start, NO3N)) +
-  geom_point(aes(color = o2)) +
-  theme_bw()+
-  #    geom_smooth(aes(color = variable)) +
-  facet_wrap(~lakename,ncol=1) +
-  ggtitle("no3no2 iceon - shallow")
-
-NH4N_breakdown_iceon_shallow <- ggplot(dataplot, aes(days.since.iceon.start, NH4N)) +
-  geom_point(aes(color = o2)) +
-  theme_bw()+
-  #    geom_smooth(aes(color = variable)) +
-  facet_wrap(~lakename,ncol=1) +
-  ggtitle("nh4n iceon - shallow")
-
-TDN_breakdown_iceon_shallow <- ggplot(dataplot, aes(days.since.iceon.start, TDN)) +
-  geom_point(aes(color = o2)) +
-  theme_bw()+
-  #    geom_smooth(aes(color = variable)) +
-  facet_wrap(~lakename,ncol=1) +
-  ggtitle("tdn iceon - shallow")
-
-png(filename="deep.png",height=16,width=14,units="in",res=240)
-grid.newpage()
-pushViewport(viewport(layout = grid.layout(1, 3)))
-print(NO3N_breakdown_iceon_deep,vp=viewport(layout.pos.row = 1, layout.pos.col = 1))
-print(NH4N_breakdown_iceon_deep,vp=viewport(layout.pos.row = 1, layout.pos.col = 2))
-print(TDN_breakdown_iceon_deep,vp=viewport(layout.pos.row = 1, layout.pos.col = 3))
-dev.off()
-
-png(filename="shallow.png",height=16,width=14,units="in",res=240)
-grid.newpage()
-pushViewport(viewport(layout = grid.layout(1, 3)))
-print(NO3N_breakdown_iceon_shallow,vp=viewport(layout.pos.row = 1, layout.pos.col = 1))
-print(NH4N_breakdown_iceon_shallow,vp=viewport(layout.pos.row = 1, layout.pos.col = 2))
-print(TDN_breakdown_iceon_shallow,vp=viewport(layout.pos.row = 1, layout.pos.col = 3))
-dev.off()
-
-}
-
-##################################################
-}
-}
-
