@@ -41,13 +41,14 @@ rm(list = ls())
 
 start_dir<-as.character(getwd())
 base_dir<-start_dir
-#base_dir<-substr(start_dir,1,nchar(start_dir)-nchar("/Scripts"))
+base_dir<-substr(start_dir,1,nchar(start_dir)-nchar("/Scripts"))
 data_dir<-paste(base_dir,"/Data",sep="")
 #base_dir<-"/Users/spowers/Desktop/Sandboxes/2016Mar16"
 #data_dir<-paste(c(base_dir,"/DataAsText"),collapse="")
 
 setwd(base_dir)
 
+library(plyr)
 library(dplyr)
 library(ggplot2)
 library(grid)
@@ -141,11 +142,18 @@ wtempO2.monthly <- subset(data.lter.phys,data.lter.phys$depth>-1) %>%
   group_by(lakeid,sta,year4,month=as.character(format(sampledate,"%b"))) %>%
   dplyr::summarize(temp_mean=mean(wtemp, na.rm=TRUE),o2_mean=mean(o2sat, na.rm=TRUE))
 
-sumO2.monthly <- subset(data.lter.phys,data.lter.phys$depth>-1) %>%
-  group_by(lakeid,sta,year4,sampledate) %>%
-  dplyr::summarize(O2_sum=sum(with(approx(c(0.0001,0.0002,0.0003,diff(depth)),c(10,10,o2),n=100),x*y))/max(depth))
+#sumO2.monthly <- subset(data.lter.phys,data.lter.phys$depth>-1) %>%
+#  group_by(lakeid,sta,year4,sampledate) %>%
+#  dplyr::summarize(O2_sum=sum(o2)) %>% as.data.frame()
 
-sumO2.monthly <- sumO2.monthly %>%
+sumO2.df <- subset(data.lter.phys,data.lter.phys$depth>-1 & data.lter.phys$o2>0)[order(data.lter.phys$lakeid,data.lter.phys$sampledate,data.lter.phys$sta,data.lter.phys$depth),]
+sumO2.df <- sumO2.df %>%
+  group_by(lakeid,sta,year4,sampledate) %>%
+  dplyr::mutate(int0=depth-lag(depth),int=ifelse(is.na(int0)==TRUE,1,int0)) %>% as.data.frame()
+sumO2.df <- sumO2.df %>%
+  group_by(lakeid,sta,year4,sampledate) %>%
+  dplyr::summarize(O2_sum=sum(o2*int)/max(depth)) %>% as.data.frame()
+sumO2.monthly <- sumO2.df %>%
   group_by(lakeid,sta,year4,month=as.character(format(sampledate,"%b"))) %>%
   dplyr::summarize(O2_sum=mean(O2_sum))
 
@@ -164,6 +172,7 @@ sumO2.monthly <- spread(sumO2.monthly,key=month,value=O2_sum) %>% as.data.frame(
 #o2.monthly<-o2.monthly %>% select(-temp_mean)
 wtemp.o2monthly<-merge(wtemp.monthly,o2.monthly,by=c("lakeid","year4","sta"))
 wtemp.o2monthly<-merge(wtemp.o2monthly,sumO2.monthly,by=c("lakeid","year4","sta"))
+
 
 data.lter.phys$lakestaday<-paste(data.lter.phys$lakeid,data.lter.phys$sta,data.lter.phys$sampledate)
 lakestadays<-unique(data.lter.phys$lakestaday)
@@ -238,6 +247,7 @@ setwd(base_dir)
 
 #data.lter.nutrients <- filter(data.lter.nutrients, lakeid != "FI" & lakeid != "ME" & lakeid != "MO" & lakeid != "WI")
 data.lter.nutrients <- merge(data.lter.nutrients,data.lter.phys,by=c("lakeid","sta","year4","daynum","sampledate","depth","rep"),All=TRUE)
+data.lter.nutrients <- merge(data.lter.nutrients,sumO2.df,by=c("lakeid","year4","sta","sampledate"),all=TRUE)
 data.lter.nutrients <- merge(data.lter.nutrients,wtemp.o2monthly,by=c("lakeid","year4","sta"),all=TRUE)
 data.lter.nutrients <- merge(data.lter.nutrients,mix,by=c("lakestaday"),all=TRUE)
 
@@ -298,7 +308,6 @@ data.agg.filt <- data.agg.filt %>%
 #remove instances where all vars of interest are NA
 
 data.agg.filt.nutrients <- data.agg.filt %>% filter(!is.na(avetotphos) | !is.na(avetotdissphos) | !is.na(avetotnitro) | !is.na(avetotdissnitro))
-
 
 #this is the df of interest in terms of seasonal averages
 #use a subset - just dates - to limit NTL-LTER dataset to only samples of interest in terms of seasons
@@ -392,14 +401,14 @@ data.N.iceon<-merge(data.N.iceon,getmaxdepth,by=c("lakename","year","sampledate"
 
 data.NPtype.shallow <- filter(data.N.iceon, depth<UMLbottom)  %>% #for photic depths (no avering or anything)
   group_by(lakename, year, sampledate,days.since.iceon.start, daynum_wateryr, maxdepth, upperlayerTF,bottomlayerTF,
-           sumO2_Nov,sumO2_Dec,o2,wtemp_Oct,wtemp_Aug,wtemp_Jul,wtemp_Jun,o2_Oct,o2_Aug,o2_Jul,o2_Jun,UMLbottom,grad_range) %>%
+           O2_sum,sumO2_Nov,sumO2_Dec,sumO2_Jan,sumO2_Oct,sumO2_Sep,o2,wtemp_Oct,wtemp_Aug,wtemp_Jul,wtemp_Jun,o2_Oct,o2_Aug,o2_Jul,o2_Jun,UMLbottom,grad_range) %>%
   dplyr::summarize(NO3N=mean(NO3N,na.rm=TRUE), NH4N=mean(NH4N,na.rm=TRUE),DIN=mean(DIN,na.rm=TRUE),
                    DON=mean(DON,na.rm=TRUE),TDN=mean(TDN,na.rm=TRUE),TDP=mean(TDP,na.rm=TRUE),
                    TN=mean(TN,na.rm=TRUE),TP=mean(TP,na.rm=TRUE)) %>%
     select(lakename, year, sampledate,days.since.iceon.start, daynum_wateryr, maxdepth, upperlayerTF,bottomlayerTF,NO3N, NH4N, DIN, DON, TDN, TDP, TN, TP, o2,wtemp_Oct,wtemp_Aug,wtemp_Jul,wtemp_Jun,o2_Oct,o2_Aug,o2_Jul,o2_Jun,UMLbottom,grad_range)
 data.NPtype.deep <- filter(data.N.iceon, depth>UMLbottom)  %>% 
   group_by(lakename, year, sampledate,days.since.iceon.start, daynum_wateryr, maxdepth, upperlayerTF,bottomlayerTF,
-           sumO2_Nov,sumO2_Dec,o2,wtemp_Oct,wtemp_Aug,wtemp_Jul,wtemp_Jun,o2_Oct,o2_Aug,o2_Jul,o2_Jun,UMLbottom,grad_range) %>%
+           O2_sum,sumO2_Nov,sumO2_Dec,sumO2_Jan,sumO2_Oct,sumO2_Sep,o2,wtemp_Oct,wtemp_Aug,wtemp_Jul,wtemp_Jun,o2_Oct,o2_Aug,o2_Jul,o2_Jun,UMLbottom,grad_range) %>%
   dplyr::summarize(NO3N=mean(NO3N,na.rm=TRUE), NH4N=mean(NH4N,na.rm=TRUE),DIN=mean(DIN,na.rm=TRUE),
                    DON=mean(DON,na.rm=TRUE),TDN=mean(TDN,na.rm=TRUE),TDP=mean(TDP,na.rm=TRUE),
                    TN=mean(TN,na.rm=TRUE),TP=mean(TP,na.rm=TRUE)) %>%
@@ -412,10 +421,10 @@ data.NPtype.deep$NP_diss[which(data.NPtype.deep$TDP==0)]<-(data.NPtype.deep$DIN[
 
 data.NPtype.hyps <- data.N.iceon  %>% #for photic depths (no avering or anything)
   select(lakename, year, sampledate,days.since.iceon.start, daynum_wateryr, depth, maxdepth, upperlayerTF,bottomlayerTF, middlelayerTF, NO3N, NH4N, DIN, DON, TDN, TDP, TN, TP, 
-         sumO2_Nov,sumO2_Dec,o2,wtemp_Oct,wtemp_Aug,wtemp_Jul,wtemp_Jun,o2_Oct,o2_Aug,o2_Jul,o2_Jun,UMLbottom,grad_range)
+         O2_sum,sumO2_Nov,sumO2_Dec,sumO2_Jan,sumO2_Oct,sumO2_Sep,o2,wtemp_Oct,wtemp_Aug,wtemp_Jul,wtemp_Jun,o2_Oct,o2_Aug,o2_Jul,o2_Jun,UMLbottom,grad_range)
 
 data.NPtype.hyps<- data.NPtype.hyps %>% select(-depth) %>%
-  group_by(lakename, year,sampledate,days.since.iceon.start,maxdepth,UMLbottom,grad_range,sumO2_Nov, sumO2_Dec) %>% 
+  group_by(lakename, year,sampledate,days.since.iceon.start,maxdepth,UMLbottom,grad_range,O2_sum, sumO2_Nov, sumO2_Dec, sumO2_Jan, sumO2_Oct, sumO2_Sep) %>% 
   dplyr::summarize(NO3N.wt.middle = mean(NO3N*middlelayerTF/maxdepth,na.rm=TRUE),
                    NO3N.wt.shallow = ifelse(NO3N.wt.middle>0,mean(NO3N*(UMLbottom-0.5)*upperlayerTF/maxdepth,na.rm=TRUE),
                                             mean(NO3N*UMLbottom*upperlayerTF/maxdepth,na.rm=TRUE)),
@@ -520,7 +529,7 @@ plot.Nform.depth <-  ggplot(dataplot, aes(x=days.since.iceon.start, y=value,grou
   theme(strip.text.x=element_text())
 plot.Nform.depth
 
-dataplot<-rbind.fill(data.NPtype.deep,data.NPtype.shallow,data.NPtype.hyps)
+dataplot<-plyr::rbind.fill(data.NPtype.deep,data.NPtype.shallow,data.NPtype.hyps)
 dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","Lake Mendota","Lake Wingra"))
 dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("DIN")))
 dataplot$value[which(dataplot$value==0)]<-0.5
@@ -536,7 +545,7 @@ plot.DINcombine.depths <-  ggplot(dataplot, aes(x=days.since.iceon.start, y=log1
   theme(strip.text.x=element_text())
 plot.DINcombine.depths
 
-dataplot<-rbind.fill(data.NPtype.deep,data.NPtype.shallow,data.NPtype.hyps)
+dataplot<-plyr::rbind.fill(data.NPtype.deep,data.NPtype.shallow,data.NPtype.hyps)
 dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","Lake Mendota","Lake Wingra"))
 dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("TDP")))
 dataplot$value[which(dataplot$value==0)]<-0.5
@@ -552,7 +561,7 @@ plot.TDPcombine.depths <-  ggplot(dataplot, aes(x=days.since.iceon.start, y=log1
   theme(strip.text.x=element_text())
 plot.TDPcombine.depths
 
-dataplot<-rbind.fill(data.NPtype.hyps,data.NPtype.deep,data.NPtype.shallow)
+dataplot<-plyr::rbind.fill(data.NPtype.hyps,data.NPtype.deep,data.NPtype.shallow)
 #dataplot<-data.NPtype.deep
 dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","Lake Mendota","Lake Wingra"))
 dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("NP_diss")))
@@ -590,6 +599,7 @@ plot.layers
 
 ###############################
 ###############################
+setwd(base_dir)
 
 png(file="layers.png",width=12,height=4,units="in",res=300)
 print(plot.layers)
@@ -615,11 +625,126 @@ png(file="NPcombine.png",width=7,height=7,units="in",res=300)
 print(plot.NPcombine)
 dev.off()
 
-
 ###########################
 ###########################
 
 dataplot<-data.NPtype.hyps
+dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","Lake Mendota","Lake Wingra"))
+dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("NO3N","NH4N","DIN","TDN","TDP")))
+
+plot.NPhypsO2 <-  ggplot(dataplot, aes(x=O2_sum, y=value)) +
+  geom_point(color="#619CFF") + ylab("Conc (mg/L)") + xlab("O2 Conc (mg/L)")+
+  theme_bw()+#scale_color_gradient(name = "UML bottom")+
+  geom_smooth(col="black")+#aes(color = form)) +
+  facet_grid(lakename~form,scales="free") +
+  theme(strip.text.x=element_text())+
+  ggtitle("under ice - hyps weighted")
+plot.NPhypsO2
+
+plot.NPhypsO2.lumplakes <-  ggplot(dataplot, aes(x=O2_sum, y=value)) +
+  geom_point(color="#619CFF") + ylab("Conc (mg/L)") + xlab("O2 Conc (mg/L)")+
+  theme_bw()+#scale_color_gradient(name = "UML bottom")+
+  geom_smooth(col="black")+#aes(color = form)) +
+  facet_wrap(~form,ncol=3,scales="free") +
+  theme(strip.text.x=element_text())+
+  ggtitle("under ice - hyps weighted")
+plot.NPhypsO2.lumplakes
+
+plot.hypsO2 <-  ggplot(dataplot, aes(x=days.since.iceon.start, y=O2_sum)) +
+  geom_point(color="#619CFF") + ylab("O2 Conc (mg/L))") + xlab("Days since iceon")+
+  theme_bw()+#scale_color_gradient(name = "UML bottom")+
+  geom_smooth(col="black")+#aes(color = form)) +
+  facet_wrap(~lakename,ncol=3) +
+  theme(strip.text.x=element_text())+
+  ggtitle("under ice - hyps weighted")
+plot.hypsO2
+
+dataplot<-data.NPtype.hyps
+dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","Lake Mendota","Lake Wingra"))
+dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("NP_diss")))
+
+plot.NPratio.hypsO2 <-  ggplot(dataplot, aes(x=O2_sum, y=log10(value))) +
+  geom_point(color="#619CFF") + ylab("Conc (mg/L)") + xlab("O2 Conc (mg/L)")+
+  theme_bw()+#scale_color_gradient(name = "UML bottom")+
+  geom_smooth(col="black")+#aes(color = form)) +
+  facet_wrap(~lakename,ncol=3)+#,scales="free") +
+  theme(strip.text.x=element_text())+
+  ggtitle("under ice - hyps weighted")
+plot.NPratio.hypsO2
+
+dataplot<-rbind(data.NPtype.shallow,data.NPtype.deep)
+dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","Lake Mendota","Lake Wingra"))
+dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("NO3N","NH4N","DIN","TDN","TDP")))
+#00BA38 #00BFC4
+plot.NPO2.depth <-  ggplot(dataplot, aes(x=O2_sum, y=value,group=method,colour=method)) +
+  geom_point() + ylab("Conc (mg/L)") + xlab("O2 Conc (mg/L)")+
+  scale_colour_manual(values=c("darkgray","#00BA38"))+
+  theme_bw()+#scale_color_gradient(name = "UML bottom")+
+  geom_smooth(col="black")+#aes(color = form)) +
+  facet_grid(lakename~form,scales="free_y") +
+  theme(strip.text.x=element_text())
+plot.NPO2.depth
+
+dataplot<-data.NPtype.deep
+dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","Lake Mendota","Lake Wingra"))
+dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("NO3N","NH4N","DIN","TDN","TDP")))
+
+plot.NPdeepO2 <-  ggplot(dataplot, aes(x=O2_sum, y=value)) +
+  geom_point(color="#619CFF") + ylab("Conc (mg/L)") + xlab("O2 Conc (mg/L)")+
+  theme_bw()+#scale_color_gradient(name = "UML bottom")+
+  geom_smooth(col="black")+#aes(color = form)) +
+  facet_grid(lakename~form,scales="free") +
+  theme(strip.text.x=element_text())+
+  ggtitle("under ice - hyps weighted")
+plot.NPdeepO2
+
+dataplot<-data.NPtype.shallow
+dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","Lake Mendota","Lake Wingra"))
+dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("NO3N","NH4N","DIN","TDN","TDP")))
+
+plot.NPshallowO2 <-  ggplot(dataplot, aes(x=O2_sum, y=value)) +
+  geom_point(color="#619CFF") + ylab("Conc (mg/L)") + xlab("O2 Conc (mg/L)")+
+  theme_bw()+#scale_color_gradient(name = "UML bottom")+
+  geom_smooth(col="black")+#aes(color = form)) +
+  facet_grid(lakename~form,scales="free") +
+  theme(strip.text.x=element_text())+
+  ggtitle("under ice - hyps weighted")
+plot.NPshallowO2
+
+##############################################
+
+png(file="NPhypsO2.png",width=8,height=8,units="in",res=300)
+print(plot.NPhypsO2)
+dev.off()
+
+png(file="NPhypsO2.lumplakes.png",width=8,height=5.5,units="in",res=300)
+print(plot.NPhypsO2.lumplakes)
+dev.off()
+
+png(file="hypsO2.png",width=8,height=5.5,units="in",res=300)
+print(plot.hypsO2)
+dev.off()
+
+png(file="NPO2.depth.png",width=8,height=6,units="in",res=300)
+print(plot.NPO2.depth)
+dev.off()
+
+png(file="NPdeepO2.png",width=8,height=6,units="in",res=300)
+print(plot.NPdeepO2)
+dev.off()
+
+png(file="NPshallowO2.png",width=8,height=8,units="in",res=300)
+print(plot.NPshallowO2)
+dev.off()
+
+png(file="NPratio.hypsO2.png",width=8,height=8,units="in",res=300)
+print(plot.NPratio.hypsO2)
+dev.off()
+
+##############################################
+
+
+dataplot<-data.NPtype.deep
 dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","Lake Mendota","Lake Wingra"))
 dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("NO3N","NH4N","DIN","TDN")))
 #dataplot<-dataplot[-which(is.na(dataplot$value)==TRUE),]
@@ -633,6 +758,25 @@ plot.Nhyps <-  ggplot(dataplot, aes(x=sumO2_Nov, y=value)) +
   theme(strip.text.x=element_text())+
   ggtitle("under ice - hyps weighted")
 plot.Nhyps
+
+
+
+dataplot<-data.NPtype.deep
+dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","Lake Mendota","Lake Wingra"))
+dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("NO3N","NH4N","DIN","TDN")))
+#dataplot<-dataplot[-which(is.na(dataplot$value)==TRUE),]
+
+plot.Nhyps <-  ggplot(dataplot, aes(x=sumO2_Nov, y=value)) +
+  geom_point(color="#619CFF") + ylab("Log10 Conc (mg/L)") + xlab("Days since iceon")+
+  #  geom_text(aes(color=o2,x=sumO2_Nov, y=value,label=substr(year,3,4))) +
+  theme_bw()+#scale_color_gradient(name = "UML bottom")+
+  geom_smooth(col="black")+#aes(color = form)) +
+  facet_grid(lakename~form,scales="free_y") +
+  theme(strip.text.x=element_text())+
+  ggtitle("under ice - hyps weighted")
+plot.Nhyps
+
+
 
 #dataplot<-rbind(data.NPtype.shallow,data.NPtype.deep)
 dataplot<-data.NPtype.deep
@@ -650,7 +794,18 @@ plot.Nform.depth <-  ggplot(dataplot, aes(x=days.since.iceon.start, y=value,colo
   theme(strip.text.x=element_text())
 plot.Nform.depth
 
-dataplot<-rbind.fill(data.NPtype.deep,data.NPtype.shallow,data.NPtype.hyps)
+plot.Nform.depth <-  ggplot(dataplot, aes(x=sumO2_Nov, y=value,colour=sumO2_Nov)) +
+  geom_point() + ylab("Log10 Conc (mg/L)") + xlab("Days since iceon")+
+  #  scale_colour_manual(values=c("darkgray","#00BA38"))+
+  #  geom_text(aes(color=o2,x=sumO2_Nov, y=value,label=substr(year,3,4))) +
+  theme_bw()+#scale_color_gradient(name = "UML bottom")+
+  geom_smooth(col="black")+#aes(color = form)) +
+  facet_grid(lakename~form,scales="free") +
+  theme(strip.text.x=element_text())
+plot.Nform.depth
+
+
+dataplot<-plyr::rbind.fill(data.NPtype.deep,data.NPtype.shallow,data.NPtype.hyps)
 dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","Lake Mendota","Lake Wingra"))
 dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("DIN")))
 dataplot$value[which(dataplot$value==0)]<-0.5
@@ -666,7 +821,7 @@ plot.DINcombine.depths <-  ggplot(dataplot, aes(x=sumO2_Nov, y=log10(value),colo
   theme(strip.text.x=element_text())
 plot.DINcombine.depths
 
-dataplot<-rbind.fill(data.NPtype.deep,data.NPtype.shallow,data.NPtype.hyps)
+dataplot<-plyr::rbind.fill(data.NPtype.deep,data.NPtype.shallow,data.NPtype.hyps)
 dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","Lake Mendota","Lake Wingra"))
 dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("TDP")))
 dataplot$value[which(dataplot$value==0)]<-0.5
@@ -682,7 +837,7 @@ plot.TDPcombine.depths <-  ggplot(dataplot, aes(x=sumO2_Nov, y=log10(value),colo
   theme(strip.text.x=element_text())
 plot.TDPcombine.depths
 
-dataplot<-rbind.fill(data.NPtype.hyps,data.NPtype.deep,data.NPtype.shallow)
+dataplot<-plyr::rbind.fill(data.NPtype.hyps,data.NPtype.deep,data.NPtype.shallow)
 #dataplot<-data.NPtype.deep
 dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","Lake Mendota","Lake Wingra"))
 dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("NP_diss")))
@@ -704,7 +859,7 @@ plot.NPcombine
 ##########################
 ##########################
 
-dataplot<-rbind.fill(data.NPtype.deep,data.NPtype.shallow,data.NPtype.hyps)
+dataplot<-plyr::rbind.fill(data.NPtype.deep,data.NPtype.shallow,data.NPtype.hyps)
 dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","Lake Mendota","Lake Wingra"))
 dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("TDN")))
 #dataplot$value[which(dataplot$value==0)]<-0.5
@@ -716,7 +871,7 @@ dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","
 dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("NO3N","NH4N","DIN","TDN")))
 
 plot.o2 <-  ggplot(dataplot, aes(x=sumO2_Nov, y=value,group=method,color=method)) +
-  geom_point(colour="darkgray") + ylab("Log10 Conc (mg/L)") + xlab("ONI JanFeb")+#xlim(0,150)+
+  geom_point(colour="darkgray") + ylab("Log10 Conc (mg/L)") + xlab("sum O2 Nov")+#xlim(0,150)+
   scale_colour_manual(values=c("darkgray","#00BA38","#619CFF"))+
   #  geom_text(aes(color=o2,x=days.since.iceon.start, y=value,label=substr(year,3,4))) +
   theme_bw()+#scale_color_gradient(name = "UML bottom")+
@@ -736,7 +891,7 @@ dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("NO3N","NH
 #dataplot<-merge(dataplot,PDO,by.x="year",by.y="YEAR")
 
 plot.o2 <-  ggplot(dataplot, aes(x=sumO2_Nov, y=value)) +
-  geom_point(colour="darkgray") + ylab("Log10 Conc (mg/L)") + xlab("ONI JanFeb")+#xlim(0,150)+
+  geom_point(colour="darkgray") + ylab("Log10 Conc (mg/L)") + xlab("sum O2 Nov")+#xlim(0,150)+
 #  scale_colour_manual(values=c("darkgray","#00BA38","#619CFF"))+
   #  geom_text(aes(color=o2,x=days.since.iceon.start, y=value,label=substr(year,3,4))) +
   theme_bw()+#scale_color_gradient(name = "UML bottom")+
