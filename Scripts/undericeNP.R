@@ -379,6 +379,30 @@ data.ice.sub.agg <- data.subset.ice %>%
 
 #this has values - averaged over entire *SAMPLED* water column
 
+#####################
+#check low o2 dates for Trout and Sparkling
+O2check<-data.N.iceon %>% 
+  group_by(lakename,year) %>%
+  dplyr::summarize(minO2=min(O2_sum,na.rm=TRUE)) %>% as.data.frame()
+
+#Trout Lake 1995  5.321429
+#Sparkling Lake 2011  3.168750
+
+O2check2<- subset(data.N.iceon, data.N.iceon$O2_sum==5.321429 | data.N.iceon$O2_sum==3.168750)
+unique(data.frame(O2check2$lakename,O2check2$sampledate))
+
+O2check3<- subset(data.N.iceon, data.N.iceon$O2_sum<5.5)
+unique(data.frame(O2check3$lakename,O2check3$sampledate,O2check3$O2_sum))
+#91     Sparkling Lake          2011-01-18        3.168750
+#108        Trout Lake          1995-03-21        5.321429
+
+lowO2SP<-subset(data.lter.phys,data.lter.phys$lakeid=="SP" & data.lter.phys$sampledate=="2011-01-18")
+lowO2TR<-subset(data.lter.phys,data.lter.phys$lakeid=="TR" & data.lter.phys$sampledate=="1995-03-21")
+
+lowO2<-rbind(lowO2SP,lowO2TR)
+setwd(base_dir)
+write.csv(lowO2,"lowO2.csv")
+setwd()
 #############################################################################
 ##################### types of N - breakdown TDP ############################
 #############################################################################
