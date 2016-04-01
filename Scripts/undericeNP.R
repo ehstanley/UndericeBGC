@@ -40,7 +40,8 @@ rm(list = ls())
 #base_dir<-"/Users/steve.powers/Desktop/Sandboxes/2016Mar8pm_IcePowers"
 
 start_dir<-as.character(getwd())
-base_dir<-substr(start_dir,1,nchar(start_dir)-nchar("/Scripts"))
+base_dir<-start_dir
+#base_dir<-substr(start_dir,1,nchar(start_dir)-nchar("/Scripts"))
 data_dir<-paste(base_dir,"/Data",sep="")
 #base_dir<-"/Users/spowers/Desktop/Sandboxes/2016Mar16"
 #data_dir<-paste(c(base_dir,"/DataAsText"),collapse="")
