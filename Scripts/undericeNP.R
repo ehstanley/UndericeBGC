@@ -43,6 +43,8 @@ start_dir<-as.character(getwd())
 base_dir<-start_dir
 base_dir<-substr(start_dir,1,nchar(start_dir)-nchar("/Scripts"))
 data_dir<-paste(base_dir,"/Data",sep="")
+figs_dir<-paste(base_dir,"/Figures",sep="")
+
 #base_dir<-"/Users/spowers/Desktop/Sandboxes/2016Mar16"
 #data_dir<-paste(c(base_dir,"/DataAsText"),collapse="")
 
@@ -599,7 +601,7 @@ plot.layers
 
 ###############################
 ###############################
-setwd(base_dir)
+setwd(figs_dir)
 
 png(file="layers.png",width=12,height=4,units="in",res=300)
 print(plot.layers)
