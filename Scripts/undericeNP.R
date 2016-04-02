@@ -573,7 +573,7 @@ dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("NO3N","NH
 #dataplot<-dataplot[-which(is.na(dataplot$value)==TRUE),]
 
 plot.Nhyps <-  ggplot(dataplot, aes(x=days.since.iceon.start, y=value)) +
-  geom_point(color="#619CFF") + ylab("Log10 Conc (mg/L)") + xlab("Days since iceon")+xlim(0,150)+
+  geom_point(color="#619CFF") + ylab("Conc (ug/L)") + xlab("Days since iceon")+xlim(0,150)+
   #  geom_text(aes(color=o2,x=days.since.iceon.start, y=value,label=substr(year,3,4))) +
   theme_bw()+#scale_color_gradient(name = "UML bottom")+
   geom_smooth(col="black")+#aes(color = form)) +
@@ -589,7 +589,7 @@ dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("NO3N","NH
 #dataplot<-dataplot[-which(is.na(dataplot$value)==TRUE),]
 #00BA38 #00BFC4
 plot.Nform.depth <-  ggplot(dataplot, aes(x=days.since.iceon.start, y=value,group=method,colour=method)) +
-  geom_point() + ylab("Log10 Conc (mg/L)") + xlab("Days since iceon")+xlim(0,150)+
+  geom_point() + ylab("Conc (ug/L)") + xlab("Days since iceon")+xlim(0,150)+
   scale_colour_manual(values=c("darkgray","#00BA38"))+
   #  geom_text(aes(color=o2,x=days.since.iceon.start, y=value,label=substr(year,3,4))) +
   theme_bw()+#scale_color_gradient(name = "UML bottom")+
@@ -605,7 +605,7 @@ dataplot$value[which(dataplot$value==0)]<-0.5
 #dataplot<-dataplot[-which(is.na(dataplot$value)==TRUE),]
 
 plot.DINcombine.depths <-  ggplot(dataplot, aes(x=days.since.iceon.start, y=log10(value),colour=method)) +
-  geom_point() + ylab("Log10 Conc (mg/L)") + xlab("Days since iceon")+xlim(0,150)+
+  geom_point() + ylab("Log10 Conc (ug/L)") + xlab("Days since iceon")+xlim(0,150)+
   scale_colour_manual(values=c("darkgray","#00BA38","#619CFF"))+
   #  geom_text(aes(color=o2,x=days.since.iceon.start, y=value,label=substr(year,3,4))) +
   theme_bw()+#scale_color_gradient(name = "UML bottom")+
@@ -621,7 +621,7 @@ dataplot$value[which(dataplot$value==0)]<-0.5
 #dataplot<-dataplot[-which(is.na(dataplot$value)==TRUE),]
 
 plot.TDPcombine.depths <-  ggplot(dataplot, aes(x=days.since.iceon.start, y=log10(value),colour=method)) +
-  geom_point() + ylab("Log10 Conc (mg/L)") + xlab("Days since iceon")+xlim(0,150)+
+  geom_point() + ylab("Log10 Conc (ug/L)") + xlab("Days since iceon")+xlim(0,150)+
   scale_colour_manual(values=c("darkgray","#00BA38","#619CFF"))+
   #  geom_text(aes(color=o2,x=days.since.iceon.start, y=value,label=substr(year,3,4))) +
   theme_bw()+#scale_color_gradient(name = "UML bottom")+
@@ -637,7 +637,7 @@ dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("NP_diss")
 #dataplot<-dataplot[-which(is.na(dataplot$value)==TRUE),]
 
 plot.NPcombine <-  ggplot(dataplot, aes(x=days.since.iceon.start, y=log10(value),color=method)) +
-  geom_point() + ylab("Log10 Conc (mg/L)") + xlab("Days since iceon")+xlim(0,150)+
+  geom_point() + ylab("Log10 Conc (ug/L)") + xlab("Days since iceon")+xlim(0,150)+
   scale_colour_manual(values=c("darkgray","#00BA38","#619CFF"))+
   #  geom_text(aes(color=o2,x=days.since.iceon.start, y=value,label=substr(year,3,4))) +
   theme_bw()+#scale_color_gradient(name = "UML bottom")+
@@ -703,7 +703,7 @@ dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","
 dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("NO3N","NH4N","DIN","TDN","TDP")))
 
 plot.NPhypsO2 <-  ggplot(dataplot, aes(x=O2_sum, y=value)) +
-  geom_point(color="#619CFF") + ylab("Conc (mg/L)") + xlab("O2 Conc (mg/L)")+
+  geom_point(color="#619CFF") + ylab("Conc (ug/L)") + xlab("O2 Conc (mg/L)")+
   theme_bw()+#scale_color_gradient(name = "UML bottom")+
   geom_smooth(col="black")+#aes(color = form)) +
   facet_grid(lakename~form,scales="free") +
@@ -712,7 +712,7 @@ plot.NPhypsO2 <-  ggplot(dataplot, aes(x=O2_sum, y=value)) +
 plot.NPhypsO2
 
 plot.NPhypsO2.lumplakes <-  ggplot(dataplot, aes(x=O2_sum, y=value)) +
-  geom_point(color="#619CFF") + ylab("Conc (mg/L)") + xlab("O2 Conc (mg/L)")+
+  geom_point(color="#619CFF") + ylab("Conc (ug/L)") + xlab("O2 Conc (mg/L)")+
   theme_bw()+#scale_color_gradient(name = "UML bottom")+
   geom_smooth(col="black")+#aes(color = form)) +
   facet_wrap(~form,ncol=3,scales="free") +
@@ -734,7 +734,7 @@ dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","
 dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("NP_diss")))
 
 plot.NPratio.hypsO2 <-  ggplot(dataplot, aes(x=O2_sum, y=log10(value))) +
-  geom_point(color="#619CFF") + ylab("Conc (mg/L)") + xlab("O2 Conc (mg/L)")+
+  geom_point(color="#619CFF") + ylab("Log10 Conc (ug/L)") + xlab("O2 Conc (mg/L)")+
   theme_bw()+#scale_color_gradient(name = "UML bottom")+
   geom_smooth(col="black")+#aes(color = form)) +
   facet_wrap(~lakename,ncol=3)+#,scales="free") +
@@ -747,7 +747,7 @@ dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","
 dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("NO3N","NH4N","DIN","TDN","TDP")))
 #00BA38 #00BFC4
 plot.NPO2.depth <-  ggplot(dataplot, aes(x=O2_sum, y=value,group=method,colour=method)) +
-  geom_point() + ylab("Conc (mg/L)") + xlab("O2 Conc (mg/L)")+
+  geom_point() + ylab("Conc (ug/L)") + xlab("O2 Conc (mg/L)")+
   scale_colour_manual(values=c("darkgray","#00BA38"))+
   theme_bw()+#scale_color_gradient(name = "UML bottom")+
   geom_smooth(col="black")+#aes(color = form)) +
@@ -760,7 +760,7 @@ dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","
 dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("NO3N","NH4N","DIN","TDN","TDP")))
 
 plot.NPdeepO2 <-  ggplot(dataplot, aes(x=O2_sum, y=value)) +
-  geom_point(color="#619CFF") + ylab("Conc (mg/L)") + xlab("O2 Conc (mg/L)")+
+  geom_point(color="#619CFF") + ylab("Conc (ug/L)") + xlab("O2 Conc (mg/L)")+
   theme_bw()+#scale_color_gradient(name = "UML bottom")+
   geom_smooth(col="black")+#aes(color = form)) +
   facet_grid(lakename~form,scales="free") +
@@ -773,7 +773,7 @@ dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","
 dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("NO3N","NH4N","DIN","TDN","TDP")))
 
 plot.NPshallowO2 <-  ggplot(dataplot, aes(x=O2_sum, y=value)) +
-  geom_point(color="#619CFF") + ylab("Conc (mg/L)") + xlab("O2 Conc (mg/L)")+
+  geom_point(color="#619CFF") + ylab("Conc (ug/L)") + xlab("O2 Conc (mg/L)")+
   theme_bw()+#scale_color_gradient(name = "UML bottom")+
   geom_smooth(col="black")+#aes(color = form)) +
   facet_grid(lakename~form,scales="free") +
@@ -822,7 +822,7 @@ dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("NO3N","NH
 #dataplot<-dataplot[-which(is.na(dataplot$value)==TRUE),]
 
 plot.Nhyps <-  ggplot(dataplot, aes(x=sumO2_Nov, y=value)) +
-  geom_point(color="#619CFF") + ylab("Log10 Conc (mg/L)") + xlab("Days since iceon")+
+  geom_point(color="#619CFF") + ylab("Log10 Conc (ug/L)") + xlab("Days since iceon")+
   #  geom_text(aes(color=o2,x=sumO2_Nov, y=value,label=substr(year,3,4))) +
   theme_bw()+#scale_color_gradient(name = "UML bottom")+
   geom_smooth(col="black")+#aes(color = form)) +
@@ -839,7 +839,7 @@ dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("NO3N","NH
 #dataplot<-dataplot[-which(is.na(dataplot$value)==TRUE),]
 
 plot.Nhyps <-  ggplot(dataplot, aes(x=sumO2_Nov, y=value)) +
-  geom_point(color="#619CFF") + ylab("Log10 Conc (mg/L)") + xlab("Days since iceon")+
+  geom_point(color="#619CFF") + ylab("Conc (ug/L)") + xlab("Days since iceon")+
   #  geom_text(aes(color=o2,x=sumO2_Nov, y=value,label=substr(year,3,4))) +
   theme_bw()+#scale_color_gradient(name = "UML bottom")+
   geom_smooth(col="black")+#aes(color = form)) +
@@ -857,7 +857,7 @@ dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("NO3N","NH
 #dataplot<-dataplot[-which(is.na(dataplot$value)==TRUE),]
 #00BA38 #00BFC4
 plot.Nform.depth <-  ggplot(dataplot, aes(x=days.since.iceon.start, y=value,colour=sumO2_Nov)) +
-  geom_point() + ylab("Log10 Conc (mg/L)") + xlab("Days since iceon")+
+  geom_point() + ylab("Conc (ug/L)") + xlab("Days since iceon")+
 #  scale_colour_manual(values=c("darkgray","#00BA38"))+
   #  geom_text(aes(color=o2,x=sumO2_Nov, y=value,label=substr(year,3,4))) +
   theme_bw()+#scale_color_gradient(name = "UML bottom")+
@@ -867,7 +867,7 @@ plot.Nform.depth <-  ggplot(dataplot, aes(x=days.since.iceon.start, y=value,colo
 plot.Nform.depth
 
 plot.Nform.depth <-  ggplot(dataplot, aes(x=sumO2_Nov, y=value,colour=sumO2_Nov)) +
-  geom_point() + ylab("Log10 Conc (mg/L)") + xlab("Days since iceon")+
+  geom_point() + ylab("Conc (ug/L)") + xlab("Days since iceon")+
   #  scale_colour_manual(values=c("darkgray","#00BA38"))+
   #  geom_text(aes(color=o2,x=sumO2_Nov, y=value,label=substr(year,3,4))) +
   theme_bw()+#scale_color_gradient(name = "UML bottom")+
@@ -884,7 +884,7 @@ dataplot$value[which(dataplot$value==0)]<-0.5
 #dataplot<-dataplot[-which(is.na(dataplot$value)==TRUE),]
 
 plot.DINcombine.depths <-  ggplot(dataplot, aes(x=sumO2_Nov, y=log10(value),colour=method)) +
-  geom_point() + ylab("Log10 Conc (mg/L)") + xlab("Days since iceon")+
+  geom_point() + ylab("Log10 Conc (ug/L)") + xlab("Days since iceon")+
   scale_colour_manual(values=c("darkgray","#00BA38","#619CFF"))+
   #  geom_text(aes(color=o2,x=sumO2_Nov, y=value,label=substr(year,3,4))) +
   theme_bw()+#scale_color_gradient(name = "UML bottom")+
@@ -900,7 +900,7 @@ dataplot$value[which(dataplot$value==0)]<-0.5
 #dataplot<-dataplot[-which(is.na(dataplot$value)==TRUE),]
 
 plot.TDPcombine.depths <-  ggplot(dataplot, aes(x=sumO2_Nov, y=log10(value),colour=method)) +
-  geom_point() + ylab("Log10 Conc (mg/L)") + xlab("Days since iceon")+
+  geom_point() + ylab("Log10 Conc (ug/L)") + xlab("Days since iceon")+
   scale_colour_manual(values=c("darkgray","#00BA38","#619CFF"))+
   #  geom_text(aes(color=o2,x=sumO2_Nov, y=value,label=substr(year,3,4))) +
   theme_bw()+#scale_color_gradient(name = "UML bottom")+
@@ -916,7 +916,7 @@ dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("NP_diss")
 #dataplot<-dataplot[-which(is.na(dataplot$value)==TRUE),]
 
 plot.NPcombine <-  ggplot(dataplot, aes(x=sumO2_Nov, y=log10(value),color=method)) +
-  geom_point() + ylab("Log10 Conc (mg/L)") + xlab("Days since iceon")+
+  geom_point() + ylab("Log10 Conc (ug/L)") + xlab("Days since iceon")+
   scale_colour_manual(values=c("darkgray","#00BA38","#619CFF"))+
   #  geom_text(aes(color=o2,x=sumO2_Nov, y=value,label=substr(year,3,4))) +
   theme_bw()+#scale_color_gradient(name = "UML bottom")+
@@ -943,7 +943,7 @@ dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","
 dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("NO3N","NH4N","DIN","TDN")))
 
 plot.o2 <-  ggplot(dataplot, aes(x=sumO2_Nov, y=value,group=method,color=method)) +
-  geom_point(colour="darkgray") + ylab("Log10 Conc (mg/L)") + xlab("sum O2 Nov")+#xlim(0,150)+
+  geom_point(colour="darkgray") + ylab("Conc (ug/L)") + xlab("sum O2 Nov")+#xlim(0,150)+
   scale_colour_manual(values=c("darkgray","#00BA38","#619CFF"))+
   #  geom_text(aes(color=o2,x=days.since.iceon.start, y=value,label=substr(year,3,4))) +
   theme_bw()+#scale_color_gradient(name = "UML bottom")+
@@ -961,7 +961,7 @@ dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("NO3N","NH
 
 
 plot.o2 <-  ggplot(dataplot, aes(x=sumO2_Nov, y=value)) +
-  geom_point(colour="darkgray") + ylab("Log10 Conc (mg/L)") + xlab("sum O2 Nov")+#xlim(0,150)+
+  geom_point(colour="darkgray") + ylab("Conc (ug/L)") + xlab("sum O2 Nov")+#xlim(0,150)+
 #  scale_colour_manual(values=c("darkgray","#00BA38","#619CFF"))+
   #  geom_text(aes(color=o2,x=days.since.iceon.start, y=value,label=substr(year,3,4))) +
   theme_bw()+#scale_color_gradient(name = "UML bottom")+
