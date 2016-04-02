@@ -56,7 +56,6 @@ data.lter.phys <- data.lter.phys.orig[which(data.lter.phys.orig$rep==1),]
 data.lter.phys$sampledate <- as.Date(data.lter.phys$sampledate, format = "%m/%d/%Y")
 
 #summarize monthly water temp and o2
-
 wtempO2.monthly <- subset(data.lter.phys,data.lter.phys$depth>-1) %>%
   group_by(lakeid,sta,year4,month=as.character(format(sampledate,"%b"))) %>%
   dplyr::summarize(temp_mean=mean(wtemp, na.rm=TRUE),o2_mean=mean(o2sat, na.rm=TRUE))
@@ -85,10 +84,8 @@ sumO2.monthly <- spread(sumO2.monthly,key=month,value=O2_sum) %>% as.data.frame(
 wtemp.o2monthly<-merge(wtemp.monthly,o2.monthly,by=c("lakeid","year4","sta"))
 wtemp.o2monthly<-merge(wtemp.o2monthly,sumO2.monthly,by=c("lakeid","year4","sta"))
 
-
 data.lter.phys$lakestaday<-paste(data.lter.phys$lakeid,data.lter.phys$sta,data.lter.phys$sampledate)
 lakestadays<-unique(data.lter.phys$lakestaday)
-
 
 ##############################################################################
 
