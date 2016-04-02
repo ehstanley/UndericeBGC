@@ -55,81 +55,6 @@ library(tidyr)
 #library(lme4)
 
 
-####################################################################
-################ data re: large-scale processes ####################
-####################################################################
-
-#### Pacific Decadal Oscillation ####
-
-#(need to add where this data came from)
-
-#read in PDO data
-setwd(data_dir)
-data.agg.orig <- read.csv("./Data/wisconsin_under_ice_aggregate_lakes.csv", stringsAsFactors = FALSE)
-
-PDO.orig <- read.csv("PDO.csv", stringsAsFactors = FALSE)
-PDO<-PDO.orig
-PDO<-PDO %>% gather(month,value,-YEAR)
-PDO_meanprev<-PDO %>%
-  group_by(YEAR=YEAR+1) %>%
-  dplyr::summarize(PDO_mean_prevyear=mean(value)) %>% as.data.frame()
-PDO_meanprev2<-PDO %>%
-  group_by(YEAR=YEAR+2) %>%
-  dplyr::summarize(PDO_mean_prevyear2=mean(value)) %>% as.data.frame()
-PDO_meanprev3<-PDO %>%
-  group_by(YEAR=YEAR+3) %>%
-  dplyr::summarize(PDO_mean_prevyear3=mean(value)) %>% as.data.frame()
-PDO_meanprev4<-PDO %>%
-  group_by(YEAR=YEAR+4) %>%
-  dplyr::summarize(PDO_mean_prevyear4=mean(value)) %>% as.data.frame()
-PDO_JanFeb<-subset(PDO, PDO$month %in% c("JAN","FEB"))# %>% spread(month,value)
-PDO_JanFeb<-PDO_JanFeb %>%
-  group_by(YEAR) %>%
-  dplyr::summarize(PDO_JanFeb=mean(value)) %>% as.data.frame()
-PDO_JunJulAug<-subset(PDO, PDO$month %in% c("JUN","JUL","AUG"))#  %>% gather(month,value,-YEAR)
-  PDO_JunJulAugprev<-PDO_JunJulAug %>%
-  group_by(YEAR=YEAR+1) %>%
-  dplyr::summarize(PDO_JunJulAug_prevyear=mean(value)) %>% as.data.frame()
-PDO1<-merge(PDO_meanprev,PDO_JanFeb,by="YEAR")
-PDO2<-merge(PDO1,PDO_JunJulAugprev,by="YEAR")
-PDO3<-merge(PDO2,PDO_meanprev2,by="YEAR")
-PDO4<-merge(PDO3,PDO_meanprev3,by="YEAR")
-PDO5<-merge(PDO4,PDO_meanprev4,by="YEAR")
-PDO<-PDO5
-
-#### Oceanic Nino Index ####
-
-ONI.orig <- read.csv("ONI.csv", stringsAsFactors = FALSE)
-ONI<-ONI.orig
-ONI<-ONI %>% gather(month,value,-YEAR)
-ONI_meanprev<-ONI %>%
-  group_by(YEAR=YEAR+1) %>%
-  dplyr::summarize(ONI_mean_prevyear=mean(value)) %>% as.data.frame()
-ONI_meanprev2<-ONI %>%
-  group_by(YEAR=YEAR+2) %>%
-  dplyr::summarize(ONI_mean_prevyear2=mean(value)) %>% as.data.frame()
-ONI_meanprev3<-ONI %>%
-  group_by(YEAR=YEAR+3) %>%
-  dplyr::summarize(ONI_mean_prevyear3=mean(value)) %>% as.data.frame()
-ONI_meanprev4<-ONI %>%
-  group_by(YEAR=YEAR+4) %>%
-  dplyr::summarize(ONI_mean_prevyear4=mean(value)) %>% as.data.frame()
-ONI_JanFeb<-subset(ONI, ONI$month %in% c("JAN","FEB"))# %>% spread(month,value)
-ONI_JanFeb<-ONI_JanFeb %>%
-  group_by(YEAR) %>%
-  dplyr::summarize(ONI_JanFeb=mean(value)) %>% as.data.frame()
-ONI_JunJulAug<-subset(ONI, ONI$month %in% c("JUN","JUL","AUG"))#  %>% gather(month,value,-YEAR)
-ONI_JunJulAugprev<-ONI_JunJulAug %>%
-  group_by(YEAR=YEAR+1) %>%
-  dplyr::summarize(ONI_JunJulAug_prevyear=mean(value)) %>% as.data.frame()
-ONI1<-merge(ONI_meanprev,ONI_JanFeb,by="YEAR")
-ONI2<-merge(ONI1,ONI_JunJulAugprev,by="YEAR")
-ONI3<-merge(ONI2,ONI_meanprev2,by="YEAR")
-ONI4<-merge(ONI3,ONI_meanprev3,by="YEAR")
-ONI5<-merge(ONI4,ONI_meanprev4,by="YEAR")
-ONI<-ONI5
-
-
 #######################################################################
 ############### LTER data - nutrients & physical ######################
 #######################################################################
@@ -1034,8 +959,6 @@ dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("NO3N","NH
 #dataplot<-dataplot[-which(is.na(dataplot$value)==TRUE),]
 #00BA38 #00BFC4
 
-#dataplot<-merge(dataplot,ONI,by.x="year",by.y="YEAR")
-#dataplot<-merge(dataplot,PDO,by.x="year",by.y="YEAR")
 
 plot.o2 <-  ggplot(dataplot, aes(x=sumO2_Nov, y=value)) +
   geom_point(colour="darkgray") + ylab("Log10 Conc (mg/L)") + xlab("sum O2 Nov")+#xlim(0,150)+
@@ -1051,24 +974,12 @@ plot.o2
 ###########################
 ############################
 
-plot.DINcombine.depths <-  ggplot(dataplot, aes(x=ONI_mean_prevyear, y=value,colour=method)) +
-  geom_point() + ylab("Log10 Conc (mg/L)") + xlab("ONI JanFeb")+#xlim(0,150)+
-  scale_colour_manual(values=c("darkgray","#00BA38","#619CFF"))+
-  #  geom_text(aes(color=o2,x=days.since.iceon.start, y=value,label=substr(year,3,4))) +
-  theme_bw()+#scale_color_gradient(name = "UML bottom")+
-  geom_smooth(col="black")+#aes(color = form)) +
-  facet_grid(lakename~form)+#,scales="free",ncol=4)+#,ncol=3) +
-  theme(strip.text.x=element_text())
-plot.DINcombine.depths
-
 
 
 ############################
 ###########################
 
 icesynth<-data.agg
-icesynth<-merge(icesynth,PDO,by.x="year", by.y="YEAR") #by.y="year_next")
-icesynth<-merge(icesynth,ONI,by.x="year", by.y="YEAR") #by.y="year_next")
 
 #try adding 3...adjusting for 12 months total (so +3-12 = -9 for 11 or 12)
 
@@ -1085,10 +996,6 @@ lakesta.use<-unique(data.frame(yrcounts.use$lakename,yrcounts.use$stationname))
 icesynth.use<-non.na[which(paste(non.na$lakename,non.na$stationname) %in% paste(lakesta.use[,1],lakesta.use[,2])),]
 #  subset(non.na,non.na$lakename==lakesta.use[,1])
 icesynth.use<-icesynth.use %>% select(lakename,stationname,lakeregloc,year,iceduration,season,
-                                      PDO_mean_prevyear,PDO_mean_prevyear2,PDO_mean_prevyear3,
-                                      PDO_mean_prevyear4,PDO_JunJulAug_prevyear,PDO_JanFeb,
-                                      ONI_mean_prevyear,ONI_mean_prevyear2,ONI_mean_prevyear3,
-                                      ONI_mean_prevyear4,ONI_JunJulAug_prevyear,ONI_JanFeb,
                                       watertemp,TN=maxtotnitro, TP=maxtotphos)
 icesynth.use$TP[which(icesynth.use$TP==0)]<-0.5
 icesynth.use$NP_tot<-(icesynth.use$TN/14)/(icesynth.use$TP/31)
@@ -1131,25 +1038,12 @@ NPdiss.shallow.time <-  ggplot(dataplot, aes(x=year, y=value,group=season,color=
 
 NPdiss.shallow.time
 
-NPdiss.shallow.icedur <-  ggplot(dataplot, aes(x=PDO_mean_prevyear, y=value))+#,group=season,color=season))+#-preds)) +
-#NPdiss.shallow.icedur <-  ggplot(dataplot, aes(x=ONI_mean_prevyear, y=value))+#,group=season,color=season))+#-preds)) +
-  geom_point() +
-  theme_bw()+#scale_color_gradient(name = "degrees")+
-      geom_smooth() +
-  facet_wrap(~lakesta,ncol=4,scales="free")+#,ncol=6,scales="free") +
-  theme(strip.text.x=element_text())+
-  ggtitle("under ice - shallow")
-
-NPdiss.shallow.icedur
-
 
 
 ############################
 ############################
 
 icesynth<-data.agg
-icesynth<-merge(icesynth,PDO,by.x="year", by.y="YEAR") #by.y="year_next")
-icesynth<-merge(icesynth,ONI,by.x="year", by.y="YEAR") #by.y="year_next")
 
 #try adding 3...adjusting for 12 months total (so +3-12 = -9 for 11 or 12)
 
@@ -1166,8 +1060,6 @@ lakesta.use<-unique(data.frame(yrcounts.use$lakename,yrcounts.use$stationname))
 icesynth.use<-non.na[which(paste(non.na$lakename,non.na$stationname) %in% paste(lakesta.use[,1],lakesta.use[,2])),]
 #  subset(non.na,non.na$lakename==lakesta.use[,1])
 icesynth.use<-icesynth.use %>% select(lakename,stationname,lakeregloc,year,iceduration,
-                                      PDO_mean_prevyear,PDO_mean_prevyear2,PDO_JunJulAug_prevyear,PDO_JanFeb,
-                                      ONI_mean_prevyear,ONI_mean_prevyear2,ONI_JunJulAug_prevyear,ONI_JanFeb,
                                       watertemp,TN=avetotnitro, TP=avetotphos)
 icesynth.use$NP_tot<-(icesynth.use$TN/14)/(icesynth.use$TP/31)
 icesynth.use$lakesta<-paste(icesynth.use$lakename,substr(icesynth.use$stationname,1,4))
@@ -1219,63 +1111,6 @@ NPdiss.shallow.icedur <-  ggplot(dataplot, aes(x=iceduration, y=value-preds)) +
 
 NPdiss.shallow.icedur
 
-NPdiss.shallow.ONI <-  ggplot(dataplot, aes(x=ONI_mean_prevyear, y=value-preds)) +
-  geom_point(aes(color = watertemp)) +
-  theme_bw()+scale_color_gradient(name = "degrees")+
-  #    geom_smooth(aes(color = variable)) +
-  facet_grid(form~lakesta,scales="free_y") +
-  theme(strip.text.x=element_text())+
-  ggtitle("under ice - shallow")
-NPdiss.shallow.ONI
-
-Ndiss.shallow.ONI <-  ggplot(subset(dataplot,dataplot$form=="TN"), aes(x=ONI_mean_prevyear, y=value-preds)) +
-  geom_point(aes(color = watertemp)) +
-  theme_bw()+scale_color_gradient(name = "degrees")+
-  #    geom_smooth(aes(color = variable)) +
-  facet_wrap(~lakesta,scales="free") +
-  theme(strip.text.x=element_text())+
-  ggtitle("under ice - shallow")
-Ndiss.shallow.ONI
-
-Ndiss.shallow.ONI.summer <-  ggplot(subset(dataplot,dataplot$form=="TN" & is.na(dataplot$value)==FALSE), aes(x=ONI_JunJulAug_prevyear, y=value-preds)) +
-  geom_point(aes(color = watertemp)) +
-  theme_bw()+scale_color_gradient(name = "degrees")+
-  #    geom_smooth(aes(color = variable)) +
-  facet_wrap(~lakesta,scales="free_y") +
-  theme(strip.text.x=element_text())+
-  ggtitle("under ice - deep")
-Ndiss.shallow.ONI.summer
-
-NPdiss.shallow.ONI.summer <-  ggplot(dataplot, aes(x=ONI_JunJulAug_prevyear, y=value-preds)) +
-  geom_point(aes(color = watertemp)) +
-  theme_bw()+scale_color_gradient(name = "degrees")+
-  #    geom_smooth(aes(color = variable)) +
-  facet_grid(form~lakesta,scales="free_y") +
-  theme(strip.text.x=element_text())+
-  ggtitle("under ice - deep")
-
-NPdiss.shallow.ONI.summer
-
-
-NPdiss.shallow.ONI.winter <-  ggplot(dataplot, aes(x=ONI_JanFeb, y=value-preds)) +
-  geom_point(aes(color = watertemp)) +
-  theme_bw()+scale_color_gradient(name = "degrees")+
-  #    geom_smooth(aes(color = variable)) +
-  facet_grid(form~lakesta,scales="free_y") +
-  theme(strip.text.x=element_text())+
-  ggtitle("under ice - deep")
-
-NPdiss.shallow.ONI.winter
-
-NPdiss.shallow.ONI_2yr <-  ggplot(dataplot, aes(x=ONI_mean_prevyear2, y=value-preds)) +
-  geom_point(aes(color = watertemp)) +
-  theme_bw()+scale_color_gradient(name = "degrees")+
-  #    geom_smooth(aes(color = variable)) +
-  facet_grid(form~lakesta,scales="free_y") +
-  theme(strip.text.x=element_text())+
-  ggtitle("under ice - deep")
-
-NPdiss.shallow.ONI_2yr
 
 
 
