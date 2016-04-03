@@ -42,6 +42,7 @@ library(dplyr)
 library(ggplot2)
 library(grid)
 library(tidyr)
+library(MESS)
 #library(lme4)
 
 #######################################################################
@@ -49,6 +50,9 @@ library(tidyr)
 #######################################################################
 
 ########################## physical data ##############################
+setwd(data_dir)
+
+data.agg.orig <- read.csv("wisconsin_under_ice_aggregate_lakes.csv", stringsAsFactors = FALSE)
 
 data.lter.phys.orig <- read.csv("physical_limnology_of_the_north_temperate_lakes_primary_study_lakes_ALL.csv", 
                                 stringsAsFactors = FALSE)
@@ -60,6 +64,8 @@ wtempO2.monthly <- subset(data.lter.phys,data.lter.phys$depth>-1) %>%
   group_by(lakeid,sta,year4,month=as.character(format(sampledate,"%b"))) %>%
   dplyr::summarize(temp_mean=mean(wtemp, na.rm=TRUE),o2_mean=mean(o2sat, na.rm=TRUE))
 
+do<-0
+if(do==1){
 sumO2.df <- subset(data.lter.phys,data.lter.phys$depth>-1 & data.lter.phys$o2>0)[order(data.lter.phys$lakeid,data.lter.phys$sampledate,data.lter.phys$sta,data.lter.phys$depth),]
 sumO2.df <- sumO2.df %>%
   group_by(lakeid,sta,year4,sampledate) %>%
@@ -67,6 +73,25 @@ sumO2.df <- sumO2.df %>%
 sumO2.df <- sumO2.df %>%
   group_by(lakeid,sta,year4,sampledate) %>%
   dplyr::summarize(O2_sum=sum(o2*int)/max(depth)) %>% as.data.frame()
+sumO2.monthly <- sumO2.df %>%
+  group_by(lakeid,sta,year4,month=as.character(format(sampledate,"%b"))) %>%
+  dplyr::summarize(O2_sum=mean(O2_sum))
+}
+
+#new O2 aggregation
+sumO2.df <- data.lter.phys
+O2ct <- data.lter.phys %>%
+  group_by(lakeid,sta,sampledate) %>%
+  dplyr::summarize(n=sum(o2>0,na.rm=TRUE)) %>% as.data.frame()
+O2ct<-O2ct[which(O2ct$n>=2),]
+sumO2.df <- merge(sumO2.df,O2ct,by=c("lakeid","sta","sampledate"))
+sumO2.df <- sumO2.df%>%
+  group_by(lakeid,sta,year4,sampledate) %>%
+  dplyr::mutate(int0=depth-lag(depth),int=ifelse(is.na(int0)==TRUE,1,int0)) %>% as.data.frame()
+sumO2.df <- sumO2.df %>%
+  group_by(lakeid,sta,year4,sampledate) %>% arrange(lakeid,sta,year4,depth) %>%
+  dplyr::summarize(O2_auc=auc(type="spline",x=c(depth,1+max(depth)),y=c(o2,last(o2))),maxdepth1=1+last(depth),depth_last=last(depth),
+                   O2_sum=O2_auc/maxdepth1) %>% as.data.frame()
 sumO2.monthly <- sumO2.df %>%
   group_by(lakeid,sta,year4,month=as.character(format(sampledate,"%b"))) %>%
   dplyr::summarize(O2_sum=mean(O2_sum))
@@ -600,6 +625,7 @@ png(file="NPcombine.png",width=7,height=7,units="in",res=300)
 print(plot.NPcombine)
 dev.off()
 
+setwd(base_dir)
 ##################################################
 
 dataplot<-data.NPtype.hyps
@@ -687,6 +713,7 @@ plot.NPshallowO2
 ############################################################
 ################# print figs to png ########################
 ############################################################
+setwd(figs_dir)
 
 png(file="NPhypsO2.png",width=8,height=8,units="in",res=300)
 print(plot.NPhypsO2)
@@ -716,6 +743,7 @@ png(file="NPratio.hypsO2.png",width=8,height=8,units="in",res=300)
 print(plot.NPratio.hypsO2)
 dev.off()
 
+setwd(base_dir)
 #############################################################
 
 
