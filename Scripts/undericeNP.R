@@ -531,7 +531,8 @@ plot.NPtime.depth
 plot.NPO.depth <-  ggplot(dataplot, aes(x=o2, y=log10(value), group=method, colour=method)) +
   geom_point(size=0.5) + ylab("Log10 Conc (ug/L)") + xlab("O2 Conc (mg/L)")+
   theme_bw()+#scale_color_gradient(name = "UML bottom")+
-  geom_smooth(aes(color=method),se=FALSE)+#col="black")+#aes(color = form)) +
+#  geom_smooth(aes(color=method),se=FALSE)+#col="black")+#aes(color = form)) +
+  geom_smooth(col="dark gray",se=FALSE)+#col="black")+#aes(color = form)) +
   facet_grid(lakename~form,scales="free_y") +
   theme(strip.text.x=element_text())#+
 #  ggtitle("Winter N and P, surface and deep")
@@ -572,7 +573,7 @@ dataplot$form <- factor(dataplot$form, levels=c("NO3N","NH4N","DIN","TDP"))
 plot.NPOhyps <-  ggplot(dataplot, aes(x=O2_sum, y=(value), group=lakename, colour=lakename)) +
   geom_point(size=0.75) + ylab("Conc (ug/L)") + xlab("O2")+
   theme_bw()+#scale_color_gradient(name = "UML bottom")+
-  geom_smooth(linetype=1,se=FALSE)+#col="black")+#aes(color = form)) +
+  geom_smooth(linetype=1,se=FALSE,col="dark gray")+#col="black")+#aes(color = form)) +
   facet_grid(lakename~form,scales="free") +
   theme(strip.text.x=element_text())#+
 #  ggtitle("Winter N, P, O2")
