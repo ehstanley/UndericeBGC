@@ -27,16 +27,15 @@
 rm(list = ls())
 
 #base_dir<-"/Users/steve.powers/Desktop/Sandboxes/2016Mar8pm_IcePowers"
-start_dir<-as.character(getwd())
-base_dir<-start_dir
-base_dir<-substr(start_dir,1,nchar(start_dir)-nchar("/Scripts"))
-data_dir<-paste(base_dir,"/Data",sep="")
-figs_dir<-paste(base_dir,"/Figures",sep="")
-
+#start_dir<-as.character(getwd())
+#base_dir<-start_dir
+#base_dir<-substr(start_dir,1,nchar(start_dir)-nchar("/Scripts"))
+#data_dir<-paste(base_dir,"/Data",sep="")
+#figs_dir<-paste(base_dir,"/Figures",sep="")
 #base_dir<-"/Users/spowers/Desktop/Sandboxes/2016Mar16"
 #data_dir<-paste(c(base_dir,"/DataAsText"),collapse="")
 
-setwd(base_dir)
+#setwd(base_dir)
 library(plyr)
 library(dplyr)
 library(ggplot2)
@@ -46,33 +45,103 @@ library(MESS)
 #library(lme4)
 
 #######################################################################
+####################### read in data - all ############################
+#################### do some renameing, etc. ##########################
+#######################################################################
+
+#read in original synthesis data for Wisconsin lakes
+data.agg.orig <- read.csv("./Data/wisconsin_under_ice_aggregate_lakes.csv", stringsAsFactors = FALSE)
+
+#elevations (see script...)
+data.elevs.orig <- read.csv("./Data/final_elevs.csv", stringsAsFactors = FALSE)
+
+data.elevs <- data.elevs.orig %>% rename(year4 = yr_winter)
+
+#physical limnology data for LTER lakes
+data.lter.phys.orig <- read.csv("./Data/physical_limnology_of_the_north_temperate_lakes_primary_study_lakes_ALL.csv", 
+                                stringsAsFactors = FALSE)
+
+data.lter.phys <- data.lter.phys.orig
+
+data.lter.phys$lakeid <- gsub("AL", "Allequash Lake", data.lter.phys$lakeid)
+data.lter.phys$lakeid <- gsub("BM", "Big Musky Lake", data.lter.phys$lakeid)
+data.lter.phys$lakeid <- gsub("CB", "Crystal Bog", data.lter.phys$lakeid)
+data.lter.phys$lakeid <- gsub("CR", "Crystal Lake", data.lter.phys$lakeid)
+data.lter.phys$lakeid <- gsub("SP", "Sparkling Lake", data.lter.phys$lakeid)
+data.lter.phys$lakeid <- gsub("TB", "Trout Bog", data.lter.phys$lakeid)
+data.lter.phys$lakeid <- gsub("TR", "Trout Lake", data.lter.phys$lakeid)
+data.lter.phys$lakeid <- gsub("FI", "Fish Lake", data.lter.phys$lakeid)
+data.lter.phys$lakeid <- gsub("ME", "Lake Mendota", data.lter.phys$lakeid)
+data.lter.phys$lakeid <- gsub("MO", "Lake Monona", data.lter.phys$lakeid)
+data.lter.phys$lakeid <- gsub("WI", "Lake Wingra", data.lter.phys$lakeid)
+
+data.lter.phys <- filter(data.lter.phys, lakeid != "Fish Lake" & lakeid != "Lake Mendota" & lakeid != "Lake Monona" & lakeid != "Lake Wingra")
+
+#merge physical and lake_elev data
+
+data.lter.phys <- merge(data.lter.phys, data.elevs, by = c("lakeid", "year4"))
+
+#nutrient data for LTER lakes
+data.lter.nutrients.orig <- read.csv("./Data/chemical_limnology_of_north_temperate_lakes_lter_primary_study_lakes_nutrients_ph_and_carbon_ALL.csv", 
+                                     stringsAsFactors = FALSE)
+
+data.lter.nutrients <- data.lter.nutrients.orig
+
+data.lter.nutrients$lakeid <- gsub("AL", "Allequash Lake", data.lter.nutrients$lakeid)
+data.lter.nutrients$lakeid <- gsub("BM", "Big Musky Lake", data.lter.nutrients$lakeid)
+data.lter.nutrients$lakeid <- gsub("CB", "Crystal Bog", data.lter.nutrients$lakeid)
+data.lter.nutrients$lakeid <- gsub("CR", "Crystal Lake", data.lter.nutrients$lakeid)
+data.lter.nutrients$lakeid <- gsub("SP", "Sparkling Lake", data.lter.nutrients$lakeid)
+data.lter.nutrients$lakeid <- gsub("TB", "Trout Bog", data.lter.nutrients$lakeid)
+data.lter.nutrients$lakeid <- gsub("TR", "Trout Lake", data.lter.nutrients$lakeid)
+data.lter.nutrients$lakeid <- gsub("FI", "Fish Lake", data.lter.nutrients$lakeid)
+data.lter.nutrients$lakeid <- gsub("ME", "Lake Mendota", data.lter.nutrients$lakeid)
+data.lter.nutrients$lakeid <- gsub("MO", "Lake Monona", data.lter.nutrients$lakeid)
+data.lter.nutrients$lakeid <- gsub("WI", "Lake Wingra", data.lter.nutrients$lakeid)
+
+data.lter.nutrients <- filter(data.lter.nutrients, lakeid != "Fish Lake" & lakeid != "Lake Mendota" & lakeid != "Lake Monona" & lakeid != "Lake Wingra")
+
+#read in here - calculated in script but currently not, because takes a while to calculate...
+mix<-read.csv("./Data/mix.csv", stringsAsFactors = FALSE)
+
+#######################################################################
 ############### LTER data - nutrients & physical ######################
 #######################################################################
 
 ########################## physical data ##############################
-setwd(data_dir)
 
-data.agg.orig <- read.csv("wisconsin_under_ice_aggregate_lakes.csv", stringsAsFactors = FALSE)
+#only first replicate
+data.lter.phys <- data.lter.phys[which(data.lter.phys$rep==1),]
 
-data.lter.phys.orig <- read.csv("physical_limnology_of_the_north_temperate_lakes_primary_study_lakes_ALL.csv", 
-                                stringsAsFactors = FALSE)
-data.lter.phys <- data.lter.phys.orig[which(data.lter.phys.orig$rep==1),]
+#made date column a date
 data.lter.phys$sampledate <- as.Date(data.lter.phys$sampledate, format = "%m/%d/%Y")
 
+#remove columns with flags - not doing any sort of filtering by flag or sloh at this time
+#also not doing anything with light at this time
+data.lter.phys <- select(data.lter.phys, lakeid, year4, daynum, sampledate, depth, maxdepth.t, rep, sta, wtemp, o2)
+
+#correct incorrect (as per discussion with Noah Lottig?) O2 measurement for Sparkling Lake
+#water temp and O2 had been switched in downloaded data
 which_correct_Sparkling_18Jan2011<-which(data.lter.phys$lakeid=="SP" & data.lter.phys$sampledate=="2011-01-18")
 wtemp_correct<-data.lter.phys$o2[which_correct_Sparkling_18Jan2011]
 wo2_correct<-data.lter.phys$wtemp[which_correct_Sparkling_18Jan2011]
 data.lter.phys$wtemp[which_correct_Sparkling_18Jan2011]<-wtemp_correct
 data.lter.phys$o2[which_correct_Sparkling_18Jan2011]<-wo2_correct
 
+
+###################################################################################################
+############################## LEGACY CODE - IGNORE FOR NOW #######################################
+###################################################################################################
+
 #summarize monthly water temp and o2
-wtempO2.monthly <- subset(data.lter.phys,data.lter.phys$depth>-1) %>%
-  group_by(lakeid,sta,year4,month=as.character(format(sampledate,"%b"))) %>%
-  dplyr::summarize(temp_mean=mean(wtemp, na.rm=TRUE),o2_mean=mean(o2sat, na.rm=TRUE))
+#wtempO2.monthly <- subset(data.lter.phys,data.lter.phys$depth>-1) %>%
+#  group_by(lakeid,sta,year4,month=as.character(format(sampledate,"%b"))) %>%
+#  dplyr::summarize(temp_mean=mean(wtemp, na.rm=TRUE),o2_mean=mean(o2sat, na.rm=TRUE))
 
 do<-0
 if(do==1){
-sumO2.df <- subset(data.lter.phys,data.lter.phys$depth>-1 & data.lter.phys$o2>0)[order(data.lter.phys$lakeid,data.lter.phys$sampledate,data.lter.phys$sta,data.lter.phys$depth),]
+sumO2.df <- subset(data.lter.phys,data.lter.phys$depth>-1 & data.lter.phys$o2>0)[order(data.lter.phys$lakeid,
+                                                                                       data.lter.phys$sampledate,data.lter.phys$sta,data.lter.phys$depth),]
 sumO2.df <- sumO2.df %>%
   group_by(lakeid,sta,year4,sampledate) %>%
   dplyr::mutate(int0=depth-lag(depth),int=ifelse(is.na(int0)==TRUE,1,int0)) %>% as.data.frame()
@@ -84,41 +153,67 @@ sumO2.monthly <- sumO2.df %>%
   dplyr::summarize(O2_sum=mean(O2_sum))
 }
 
+######################################################################################################
+
+#### CHANGED TO BE MAXDEPTH.T
+
 #new O2 aggregation
 sumO2.df <- data.lter.phys
+
 O2ct <- data.lter.phys %>%
   group_by(lakeid,sta,sampledate) %>%
   dplyr::summarize(n=sum(o2>0,na.rm=TRUE)) %>% as.data.frame()
+
 O2ct<-O2ct[which(O2ct$n>=2),]
+
 sumO2.df <- merge(sumO2.df,O2ct,by=c("lakeid","sta","sampledate"))
-sumO2.df <- sumO2.df%>%
-  group_by(lakeid,sta,year4,sampledate) %>%
-  dplyr::mutate(int0=depth-lag(depth),int=ifelse(is.na(int0)==TRUE,1,int0)) %>% as.data.frame()
-sumO2.df <- sumO2.df %>%
+
+#sumO2.df <- sumO2.df%>%
+  #group_by(lakeid,sta,year4,sampledate) %>%
+  #dplyr::mutate(int0=depth-lag(depth),int=ifelse(is.na(int0)==TRUE,1,int0)) %>% as.data.frame()
+
+#merge lake elevations with sumO2.df
+
+#sumO2.df <- rename(sumO2.df, year = year4)
+#data.elevs.merge <- rename(data.elevs, year = yr_winter)
+
+#sumO2.df.merge <- merge(sumO2.df, data.elevs.merge, by = c("lakeid", "year"))
+
+sumO2.df.summary <- sumO2.df %>%
   group_by(lakeid,sta,year4,sampledate) %>% arrange(lakeid,sta,year4,depth) %>%
-  dplyr::summarize(O2_auc=auc(type="spline",x=c(depth,1+max(depth)),y=c(o2,last(o2))),maxdepth1=1+last(depth),depth_last=last(depth),
-                   O2_sum=O2_auc/maxdepth1) %>% as.data.frame()
-sumO2.monthly <- sumO2.df %>%
+  #calculating auc (from MESS package) - which is area under curve for oxygen vs depth - mg*m/L
+  #area under curve here is area below deepest sample, to bottom of lake 
+  #(assuming o2 is same as deepest sample - best we can do)
+  dplyr::summarize(O2_auc=auc(type="spline",x=c(depth, last(maxdepth.t)),y=c(o2,last(o2))),
+                   #back to mg/L units - but for whole water column
+                   O2_sum=mean(O2_auc/maxdepth.t, na.rm = TRUE)) %>% as.data.frame()
+
+sumO2.monthly <- sumO2.df.summary %>%
   group_by(lakeid,sta,year4,month=as.character(format(sampledate,"%b"))) %>%
   dplyr::summarize(O2_sum=mean(O2_sum))
 
-wtemp.monthly<-wtempO2.monthly 
-o2.monthly<-wtempO2.monthly 
-wtemp.monthly$month<-paste("wtemp_",wtemp.monthly$month,sep="")
-o2.monthly$month<-paste("o2_",o2.monthly$month,sep="")
-sumO2.monthly$month<-paste("sumO2_",sumO2.monthly$month,sep="")
 
-wtemp.monthly <- spread(wtemp.monthly %>% select(-o2_mean),key=month,value=temp_mean) %>% as.data.frame()
-o2.monthly <- spread(o2.monthly %>% select(-temp_mean),key=month,value=o2_mean) %>% as.data.frame()
-sumO2.monthly <- spread(sumO2.monthly,key=month,value=O2_sum) %>% as.data.frame()
+############################## LEGACY CODE - IGNORE FOR NOW #################################
+#wtemp.monthly<-wtempO2.monthly 
+#o2.monthly<-wtempO2.monthly 
+#wtemp.monthly$month<-paste("wtemp_",wtemp.monthly$month,sep="")
+#o2.monthly$month<-paste("o2_",o2.monthly$month,sep="")
+#sumO2.monthly$month<-paste("sumO2_",sumO2.monthly$month,sep="")
 
-wtemp.o2monthly<-merge(wtemp.monthly,o2.monthly,by=c("lakeid","year4","sta"))
-wtemp.o2monthly<-merge(wtemp.o2monthly,sumO2.monthly,by=c("lakeid","year4","sta"))
+#wtemp.monthly <- spread(wtemp.monthly %>% select(-o2_mean),key=month,value=temp_mean) %>% as.data.frame()
+#o2.monthly <- spread(o2.monthly %>% select(-temp_mean),key=month,value=o2_mean) %>% as.data.frame()
+#sumO2.monthly <- spread(sumO2.monthly,key=month,value=O2_sum) %>% as.data.frame()
+
+#wtemp.o2monthly<-merge(wtemp.monthly,o2.monthly,by=c("lakeid","year4","sta"))
+#wtemp.o2monthly<-merge(wtemp.o2monthly,sumO2.monthly,by=c("lakeid","year4","sta"))
+
+#############################################################################################
+
+
+#### still needed, but already output (and takes a while, so set as do <- 0 so don't need to rerun every time) ####
 
 data.lter.phys$lakestaday<-paste(data.lter.phys$lakeid,data.lter.phys$sta,data.lter.phys$sampledate)
 lakestadays<-unique(data.lter.phys$lakestaday)
-
-##############################################################################
 
 do<-0
 if(do==1){
@@ -153,16 +248,14 @@ mix.df<-data.frame(lakestaday=lakestaday.df,layerbound=layerbound.df,grad_range=
 write.csv(mix.df,file="mix.csv")
 }
 
-mix<-read.csv("mix.csv")
+#mix<-read.csv("./Data/mix.csv")
 mix<-mix[,-1]
 
 ######################################################################################
 ############################# nutrient data ##########################################
+######################################################################################
 
-data.lter.nutrients.orig <- read.csv("chemical_limnology_of_north_temperate_lakes_lter_primary_study_lakes_nutrients_ph_and_carbon_ALL.csv", 
-                                     stringsAsFactors = FALSE)
-
-data.lter.nutrients<-data.lter.nutrients.orig[which(data.lter.nutrients.orig$rep==1),]
+data.lter.nutrients<-data.lter.nutrients[which(data.lter.nutrients$rep==1),]
 data.lter.nutrients$sampledate <- as.Date(data.lter.nutrients$sampledate, format = "%m/%d/%Y")
 
 #for now, not worried about whether values are flagged
@@ -171,6 +264,15 @@ data.lter.nutrients$no3no2[which(nchar(data.lter.nutrients$flagno3no2)>1)]<-NA
 data.lter.nutrients$nh4[which(nchar(data.lter.nutrients$flagnh4)>1)]<-NA
 data.lter.nutrients$no3no2[which(data.lter.nutrients$flagno3no2=="I")]<-NA
 data.lter.nutrients$nh4[which(data.lter.nutrients$flagnh4=="I")]<-NA
+
+#remove flag/sloh columns
+data.lter.nutrients <- select(data.lter.nutrients, lakeid, year4, daynum, sampledate, depth, 
+                              rep, sta, event, ph, phair, alk, dic, tic, doc, toc, no3no2, no2, 
+                              nh4, totnf, totnuf, totpf, totpuf)
+
+
+#remove select instances - these values look suspect (not true outliers, possible data entry mistake)
+#emailing Noah 2016-04-04 re: these values
 data.lter.nutrients <- data.lter.nutrients[-which(data.lter.nutrients$no3no2==data.lter.nutrients$nh4 & data.lter.nutrients$no3no2>300),]
 
 ###############################################################################
@@ -180,32 +282,22 @@ data.lter.nutrients <- data.lter.nutrients[-which(data.lter.nutrients$no3no2==da
 
 #### merge data sets ####
 
-data.lter.nutrients <- merge(data.lter.nutrients,data.lter.phys,by=c("lakeid","sta","year4","daynum","sampledate","depth","rep"),All=TRUE)
-data.lter.nutrients <- merge(data.lter.nutrients,sumO2.df,by=c("lakeid","year4","sta","sampledate"),all=TRUE)
-data.lter.nutrients <- merge(data.lter.nutrients,wtemp.o2monthly,by=c("lakeid","year4","sta"),all=TRUE)
+data.lter.nutrients <- merge(data.lter.nutrients,data.lter.phys,by=c("lakeid","sta","year4","daynum","sampledate","depth","rep"), all=TRUE)
+data.lter.nutrients <- merge(data.lter.nutrients,sumO2.df.summary,by=c("lakeid","year4","sta","sampledate"),all=TRUE)
+#data.lter.nutrients <- merge(data.lter.nutrients,wtemp.o2monthly,by=c("lakeid","year4","sta"),all=TRUE)
 data.lter.nutrients <- merge(data.lter.nutrients,mix,by=c("lakestaday"),all=TRUE)
 
 #data.lter.nutrients <- merge(data.lter.nutrients,o2.monthly,all=TRUE)
 
-#### rename lakes from lake id to full name ####
-
-data.lter.nutrients$lakeid <- gsub("AL", "Allequash Lake", data.lter.nutrients$lakeid)
-data.lter.nutrients$lakeid <- gsub("BM", "Big Musky Lake", data.lter.nutrients$lakeid)
-data.lter.nutrients$lakeid <- gsub("CB", "Crystal Bog", data.lter.nutrients$lakeid)
-data.lter.nutrients$lakeid <- gsub("CR", "Crystal Lake", data.lter.nutrients$lakeid)
-data.lter.nutrients$lakeid <- gsub("SP", "Sparkling Lake", data.lter.nutrients$lakeid)
-data.lter.nutrients$lakeid <- gsub("TB", "Trout Bog", data.lter.nutrients$lakeid)
-data.lter.nutrients$lakeid <- gsub("TR", "Trout Lake", data.lter.nutrients$lakeid)
-data.lter.nutrients$lakeid <- gsub("FI", "Fish Lake", data.lter.nutrients$lakeid)
-data.lter.nutrients$lakeid <- gsub("ME", "Lake Mendota", data.lter.nutrients$lakeid)
-data.lter.nutrients$lakeid <- gsub("MO", "Lake Monona", data.lter.nutrients$lakeid)
-data.lter.nutrients$lakeid <- gsub("WI", "Lake Wingra", data.lter.nutrients$lakeid)
-
+#not interested in bog lakes at the moment
 data.lter.nutrients<-subset(data.lter.nutrients,!data.lter.nutrients$lakeid %in% c("Crystal Bog","Trout Bog"))
 
+#rename columns, ensure dates are dates
 data.lter.nutrients <- dplyr::rename(data.lter.nutrients, lakename = lakeid, year = year4)
 data.lter.nutrients$sampledate <- as.Date(data.lter.nutrients$sampledate, format = "%m/%d/%Y")
 
+#calculates days since water year (?) oct. 1
+#(doesn't include leap years)
 data.lter.nutrients$daynum_wateryr<-data.lter.nutrients$daynum+round(365*0.25,digits=0)
 data.lter.nutrients$daynum_wateryr[which(data.lter.nutrients$daynum_wateryr>365)]<-365-data.lter.nutrients$daynum_wateryr[which(data.lter.nutrients$daynum_wateryr>365)]
 
@@ -214,6 +306,7 @@ data.lter.nutrients$daynum_wateryr[which(data.lter.nutrients$daynum_wateryr>365)
 #######################################################################
 
 data.agg<-data.agg.orig
+
 data.agg$lakename[which(data.agg$lakename=="Big Muskellunge Lake")]<-"Big Musky Lake"
 
 #for now, selecting variables there were pre-aggregated from aggregate data set
@@ -259,8 +352,8 @@ data.subset <- subset(data.merge, sampledate <= enddate & sampledate >= startdat
 #sample month and year
 
 data.subset <- data.subset %>% mutate(sample.month = as.integer(format(sampledate, "%m")),
-                                      sampleyear = as.integer(format(sampledate, "%Y")),
-                                      to97 = ifelse(sampleyear <= 1997, "yes", "no"))
+                                      sampleyear = as.integer(format(sampledate, "%Y")))
+                                      #to97 = ifelse(sampleyear <= 1997, "yes", "no"))
 
 #sample date - time since start of iceon (e.g. month diff between start of iceon and sample month)
 
@@ -270,6 +363,8 @@ data.subset.ice <- data.subset %>%
 #start month num is either 11, 12, or 1
 #end month num is 2-5
 #try adding 3...adjusting for 12 months total (so +3-12 = -9 for 11 or 12)
+
+#this was for monthly for plotting...may be legacy (don't think need anymore?)
 
 data.subset.ice <- data.subset.ice %>% 
                 #adjust months
@@ -293,8 +388,10 @@ data.subset.ice <- dplyr::mutate(data.subset.ice, DIN=NO3N+NH4N, DON=TDN-NO3N-NH
 
 data.N.iceon<-data.subset.ice
 
-########################################################################################
-#####################
+#########################################################################################################################
+########################### CHECKING SPECIFIC INSTANCES - MOVE ALONG ####################################################
+#########################################################################################################################
+
 #check low o2 dates for Trout and Sparkling
 O2check<-data.N.iceon %>% 
   group_by(lakename,year) %>%
@@ -318,48 +415,65 @@ lowO2<-rbind(lowO2SP,lowO2TR)
 setwd(base_dir)
 write.csv(lowO2,"lowO2.csv")
 setwd()
+
 #############################################################################
 ############### N type breakdown; P - by depth sections #####################
 #############################################################################
 
 #data.N.iceon[which(data.N.iceon$DON>300 & data.N.iceon$DON/data.N.iceon$TDN>0.8),]
 #data.N.iceon <- 
+
+#set suspect high values as NA
 data.N.iceon$DON[which(data.N.iceon$DON>400)]<-NA
 data.N.iceon$TDN[which(data.N.iceon$TDN>1000)]<-NA
 
+#set max depths for each lake - equal to deepest sample + 1
+#replace with lakemax depth
+
+#data.agg  %>% filter(lakeregloc == "Wisconsin")  %>% group_by(lakename)  %>% select(lakename, lakemaxdepth)  %>% unique()
+
+#data.N.iceon$maxdepth.set <- NA
+#data.N.iceon[which(data.N.iceon$lakename=="Allequash Lake"),]$maxdepth.set <- 8
+#data.N.iceon[which(data.N.iceon$lakename=="Big Musky Lake"),]$maxdepth.set <- 20
+#data.N.iceon[which(data.N.iceon$lakename=="Crystal Lake"),]$maxdepth.set <- 20
+#data.N.iceon[which(data.N.iceon$lakename=="Sparkling Lake"),]$maxdepth.set <- 19
+#data.N.iceon[which(data.N.iceon$lakename=="Trout Lake"),]$maxdepth.set <- 33
+
+#not interested in Mendota, Monona, Fish Lake, or Wingra at the moment
+
+data.N.iceon <- filter(data.N.iceon, lakename != "Lake Mendota" & lakename != "Lake Monona" & lakename != "Lake Wingra" & lakename != "Fish Lake")
+
+#create layer columns (1 = TRUE, 0 = FALSE)
 data.N.iceon$upperlayerTF <- as.numeric(data.N.iceon$depth<data.N.iceon$UMLbottom)
-data.N.iceon[which(data.N.iceon$lakename=="Allequash Lake"),]$maxdepth<-8
-data.N.iceon[which(data.N.iceon$lakename=="Big Musky Lake"),]$maxdepth<-20
-data.N.iceon[which(data.N.iceon$lakename=="Crystal Lake"),]$maxdepth<-20
-data.N.iceon[which(data.N.iceon$lakename=="Sparkling Lake"),]$maxdepth<-19
-data.N.iceon[which(data.N.iceon$lakename=="Trout Lake"),]$maxdepth<-33
 data.N.iceon$bottomlayerTF <- as.numeric(data.N.iceon$depth>data.N.iceon$UMLbottom)
 data.N.iceon$middlelayerTF <- as.numeric(data.N.iceon$depth==data.N.iceon$UMLbottom)
 
+#getting rid of station 3 at Trout Lake - why?
 data.N.iceon <- data.N.iceon[-which(data.N.iceon$lakename=="Trout Lake" & data.N.iceon$sta==3),]
 
-getmaxdepth<-data.N.iceon %>% 
-  group_by(lakename,year,sampledate) %>%
-  dplyr::summarize(maxdepth=max(depth))
-data.N.iceon<-merge(data.N.iceon,getmaxdepth,by=c("lakename","year","sampledate"),all=TRUE)
+#getmaxdepth<-data.N.iceon %>% 
+  #group_by(lakename,year,sampledate) %>%
+  #dplyr::summarize(maxdepth.actual=max(depth))
 
+#data.N.iceon<-merge(data.N.iceon,getmaxdepth,by=c("lakename","year","sampledate"),all=TRUE)
+
+#for rows where NO3N is not missing, count length, by depth (e.g. number of samples per depth)
 chems<-data.N.iceon[which(is.na(data.N.iceon$NO3N)==FALSE),]
+
 chemdepths<-chems %>%
   group_by(lakename,sta,depth) %>%
-  dplyr::summarize(ncount=length(NO3N)) %>% arrange(lakename,ncount) %>% as.data.frame()
+  dplyr::summarize(ncount=length(NO3N)) %>% 
+  arrange(lakename,ncount) %>% 
+  as.data.frame()
 
+
+#find average concentrations for "shallow" depths (e.g. surface depths)
 data.NP.shallow<-subset(data.N.iceon,data.N.iceon$depth==0)
-data.NP.deep<-subset(data.N.iceon,
-                     (data.N.iceon$lakename=="Allequash Lake" & data.N.iceon$depth>=6)|
-                       (data.N.iceon$lakename=="Big Musky Lake" & data.N.iceon$depth>=16)|
-                       (data.N.iceon$lakename=="Crystal Lake" & data.N.iceon$depth>=15)|
-                       (data.N.iceon$lakename=="Sparkling Lake" & data.N.iceon$depth>=15)|
-                       (data.N.iceon$lakename=="Trout Lake" & data.N.iceon$depth>=25))
 
 data.NP.shallow <- data.NP.shallow %>%
-  group_by(lakename, year, sampledate,days.since.iceon.start, daynum_wateryr, 
-           maxdepth, 
-           O2_sum,UMLbottom) %>%
+  #group by lake/sampledate/maxdepth
+  group_by(lakename, year, sampledate, days.since.iceon.start, 
+           daynum_wateryr, maxdepth.actual, O2_sum,UMLbottom) %>%
   #find average N-type and P
   dplyr::summarize(NO3N=mean(NO3N,na.rm=TRUE), 
                    NH4N=mean(NH4N,na.rm=TRUE),
@@ -373,8 +487,16 @@ data.NP.shallow <- data.NP.shallow %>%
                    wtemp=mean(wtemp,na.rm=TRUE)) %>%
   #select columns of interest
   select(lakename, year, sampledate,days.since.iceon.start, daynum_wateryr, 
-         maxdepth, NO3N, NH4N, DIN, DON, TDN, 
+         maxdepth.actual, NO3N, NH4N, DIN, DON, TDN, 
          TDP, TN, TP, o2,O2_sum,wtemp,UMLbottom)
+
+
+data.NP.deep<-subset(data.N.iceon,
+                     (data.N.iceon$lakename=="Allequash Lake" & data.N.iceon$depth>=6)|
+                       (data.N.iceon$lakename=="Big Musky Lake" & data.N.iceon$depth>=16)|
+                       (data.N.iceon$lakename=="Crystal Lake" & data.N.iceon$depth>=15)|
+                       (data.N.iceon$lakename=="Sparkling Lake" & data.N.iceon$depth>=15)|
+                       (data.N.iceon$lakename=="Trout Lake" & data.N.iceon$depth>=25))
 
 data.NP.deep <- data.NP.deep %>%
   group_by(lakename, year, sampledate,days.since.iceon.start, daynum_wateryr, 
@@ -412,6 +534,7 @@ data.NP.hyps<- data.NP.hyps %>%
                    group_by(lakename, year,sampledate,days.since.iceon.start,maxdepth,UMLbottom,
                             O2_sum) %>% 
                    #summarize - mean N type weighted by depth
+                   #
                    dplyr::summarize(
                     ######## NO3N ########
                     NO3N.wt.middle = mean(NO3N*middlelayerTF/maxdepth,na.rm=TRUE),
