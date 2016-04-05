@@ -148,10 +148,3 @@ data.summary.stats <- arrange(data.summary.stats, lakename, category)
 #write to csv
 write.csv(data.summary.stats, "./Data/data_var_summary.csv", row.names = FALSE)
 
-#want range of years...
-
-#paste into undericeNP.R
-#for importing into summary_stats.R
-saveRDS(data.N.iceon, "data_N_iceon.rds")
-
-

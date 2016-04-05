@@ -407,6 +407,9 @@ data.subset.ice <- dplyr::mutate(data.subset.ice, DIN=NO3N+NH4N, DON=TDN-NO3N-NH
 
 data.N.iceon<-data.subset.ice
 
+#for importing into summary_stats.R
+saveRDS(data.N.iceon, "data_N_iceon.rds")
+
 #########################################################################################################################
 ########################### CHECKING SPECIFIC INSTANCES - MOVE ALONG ####################################################
 #########################################################################################################################
