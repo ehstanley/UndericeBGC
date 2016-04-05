@@ -5,7 +5,7 @@
 ######## different ways, with portions of code dedicated to determining ###############
 ######## hypsometrically weighted nutrient concentrations. Additionally, ##############
 ######## oxygen is investigated in relation to both nutrient concentrations ###########
-######## and whole lake trends during iceon. Oxygen too! ##########################################
+######## and whole lake trends during iceon. ##########################################
 #######################################################################################
 #################### Information about NTL-LTER data used here ########################
 #Data was downloaded from the NTL-LTER public download page.
@@ -49,15 +49,15 @@ library(MESS)
 #################### do some renameing, etc. ##########################
 #######################################################################
 
-#read in original synthesis data for Wisconsin lakes
+# read in original synthesis data for Wisconsin lakes (from synthesis dataset) - used for iceon/iceoff bounding dates
 data.agg.orig <- read.csv("./Data/wisconsin_under_ice_aggregate_lakes.csv", stringsAsFactors = FALSE)
 
-#elevations (see script...)
+# elevations (see script lake_depths.R for how lake depths were calculated based on lake elevation in m above sea level)
 data.elevs.orig <- read.csv("./Data/final_elevs.csv", stringsAsFactors = FALSE)
 
 data.elevs <- data.elevs.orig %>% rename(year4 = yr_winter)
 
-#physical limnology data for LTER lakes
+# physical limnology data for LTER lakes
 data.lter.phys.orig <- read.csv("./Data/physical_limnology_of_the_north_temperate_lakes_primary_study_lakes_ALL.csv", 
                                 stringsAsFactors = FALSE)
 
@@ -77,11 +77,11 @@ data.lter.phys$lakeid <- gsub("WI", "Lake Wingra", data.lter.phys$lakeid)
 
 data.lter.phys <- filter(data.lter.phys, lakeid != "Fish Lake" & lakeid != "Lake Mendota" & lakeid != "Lake Monona" & lakeid != "Lake Wingra")
 
-#merge physical and lake_elev data
+# merge physical and lake_elev data - lake depth (year and lake specific) is named "maxdepth.t"
 
 data.lter.phys <- merge(data.lter.phys, data.elevs, by = c("lakeid", "year4"))
 
-#nutrient data for LTER lakes
+# nutrient data for LTER lakes
 data.lter.nutrients.orig <- read.csv("./Data/chemical_limnology_of_north_temperate_lakes_lter_primary_study_lakes_nutrients_ph_and_carbon_ALL.csv", 
                                      stringsAsFactors = FALSE)
 
@@ -102,13 +102,11 @@ data.lter.nutrients$lakeid <- gsub("WI", "Lake Wingra", data.lter.nutrients$lake
 data.lter.nutrients <- filter(data.lter.nutrients, lakeid != "Fish Lake" & lakeid != "Lake Mendota" & lakeid != "Lake Monona" & lakeid != "Lake Wingra")
 
 #read in here - calculated in script but currently not, because takes a while to calculate...
-#mix<-read.csv("./Data/mix.csv", stringsAsFactors = FALSE)
+mix<-read.csv("./Data/mix.csv", stringsAsFactors = FALSE)
 
-#######################################################################
-############### LTER data - nutrients & physical ######################
-#######################################################################
-
-########################## physical data ##############################
+##########################################################################
+############## LTER data - physical (oxygen) calculations ################
+##########################################################################
 
 #only first replicate
 data.lter.phys <- data.lter.phys[which(data.lter.phys$rep==1),]
@@ -265,11 +263,11 @@ mix.df<-data.frame(lakestaday=lakestaday.df,upper.bound,lower.bound)#,o2_sum)
 write.csv(mix.df,file="mix.csv")
 }
 
-mix<-read.csv("./Data/mix.csv")
+#mix<-read.csv("./Data/mix.csv")
 mix<-mix[,-1]
 
 ######################################################################################
-############################# nutrient data ##########################################
+##################### LTER data - nutrient calculations ##############################
 ######################################################################################
 
 data.lter.nutrients<-data.lter.nutrients[which(data.lter.nutrients$rep==1),]
@@ -292,9 +290,10 @@ data.lter.nutrients <- select(data.lter.nutrients, lakeid, year4, daynum, sample
 #emailing Noah 2016-04-04 re: these values
 data.lter.nutrients <- data.lter.nutrients[-which(data.lter.nutrients$no3no2==data.lter.nutrients$nh4 & data.lter.nutrients$no3no2>300),]
 
+
 ###############################################################################
 ############ master dataset for LTER - merged nutrient and phys data ##########
-############### (including all previously calculated pieces) ##################
+############# (including all previously calculated dataframes) ################
 ###############################################################################
 
 #### merge data sets ####
@@ -318,8 +317,10 @@ data.lter.nutrients$sampledate <- as.Date(data.lter.nutrients$sampledate, format
 data.lter.nutrients$daynum_wateryr<-data.lter.nutrients$daynum+round(365*0.25,digits=0)
 data.lter.nutrients$daynum_wateryr[which(data.lter.nutrients$daynum_wateryr>365)]<-365-data.lter.nutrients$daynum_wateryr[which(data.lter.nutrients$daynum_wateryr>365)]
 
+
 #######################################################################
 ######## under-ice ecology aggregate data for same lake subset ########
+############ (used for iceon/iceoff bounding dates) ###################
 #######################################################################
 
 data.agg<-data.agg.orig
@@ -355,9 +356,10 @@ data.agg.filt.nutrients <- data.agg.filt %>% filter(!is.na(avetotphos) | !is.na(
 
 data.agg.cut <- data.agg.filt.nutrients %>% select(season, lakename, sampledepth, photicdepth, startdate, start.month.num, enddate, end.month.num)
 
+
 ################################################################################
 ########### merge and subset LTER data with aggregate same-lake data ###########
-############### (same data, just aggregated to seasonal level) #################
+################# (finds "iceon" (winter) season for lakes) ####################
 ################################################################################
 
 #this will be huge and unwieldy to begin with 
@@ -386,19 +388,19 @@ data.subset.ice <- data.subset %>%
 data.subset.ice <- data.subset.ice %>% 
                 #adjust months
                 mutate(days.since.iceon.start = sampledate - startdate,
-                              days.since.iceon.start = as.integer(days.since.iceon.start),
-                  start.month.num.adj = ifelse(start.month.num == 1, start.month.num + 3, start.month.num - 9),
-                       end.month.num.adj = end.month.num +3,
-                       sample.month.adj = ifelse(sample.month == 11, sample.month - 9, sample.month + 3),
+                       days.since.iceon.start = as.integer(days.since.iceon.start)) #,
+                       #start.month.num.adj = ifelse(start.month.num == 1, start.month.num + 3, start.month.num - 9),
+                       #end.month.num.adj = end.month.num +3,
+                       #sample.month.adj = ifelse(sample.month == 11, sample.month - 9, sample.month + 3),
                 #find difference
-                       months.since.iceon.start = sample.month.adj - start.month.num.adj)
+                       #months.since.iceon.start = sample.month.adj - start.month.num.adj)
 
 data.subset.ice$days.since.iceon.start<-as.numeric(data.subset.ice$days.since.iceon.start)
 
 #yep, looks like it works...
 
-data.subset.ice <- data.subset.ice %>% 
-                    select(-start.month.num.adj, -end.month.num.adj, - sample.month.adj)
+#data.subset.ice <- data.subset.ice %>% 
+                    #select(-start.month.num.adj, -end.month.num.adj, - sample.month.adj)
 
 data.subset.ice <- dplyr::rename(data.subset.ice, NO3N=no3no2, NH4N=nh4, TDN=totnf, TN=totnuf, TDP=totpf, TP=totpuf)
 data.subset.ice <- dplyr::mutate(data.subset.ice, DIN=NO3N+NH4N, DON=TDN-NO3N-NH4N)
@@ -444,26 +446,12 @@ setwd()
 data.N.iceon$DON[which(data.N.iceon$DON>400)]<-NA
 data.N.iceon$TDN[which(data.N.iceon$TDN>1000)]<-NA
 
-#set max depths for each lake - equal to deepest sample + 1
-#replace with lakemax depth
-
-#data.agg  %>% filter(lakeregloc == "Wisconsin")  %>% group_by(lakename)  %>% select(lakename, lakemaxdepth)  %>% unique()
-
-data.N.iceon$maxdepth.set <- NA
-data.N.iceon[which(data.N.iceon$lakename=="Allequash Lake"),]$maxdepth.set <- 8
-data.N.iceon[which(data.N.iceon$lakename=="Big Musky Lake"),]$maxdepth.set <- 20
-data.N.iceon[which(data.N.iceon$lakename=="Crystal Lake"),]$maxdepth.set <- 20
-data.N.iceon[which(data.N.iceon$lakename=="Sparkling Lake"),]$maxdepth.set <- 20
-data.N.iceon[which(data.N.iceon$lakename=="Trout Lake"),]$maxdepth.set <- 33
-
-#not interested in Mendota, Monona, Fish Lake, or Wingra at the moment
-
-data.N.iceon <- filter(data.N.iceon, lakename != "Lake Mendota" & lakename != "Lake Monona" & lakename != "Lake Wingra" & lakename != "Fish Lake")
 
 #create layer columns (1 = TRUE, 0 = FALSE)
 #data.N.iceon$upperlayerTF <- as.numeric(data.N.iceon$depth<data.N.iceon$UMLbottom)
 #data.N.iceon$bottomlayerTF <- as.numeric(data.N.iceon$depth>data.N.iceon$UMLbottom)
 #data.N.iceon$middlelayerTF <- as.numeric(data.N.iceon$depth==data.N.iceon$UMLbottom)
+
 data.N.iceon$upperlayerTF <- as.numeric(data.N.iceon$depth<=data.N.iceon$upper.bound)
 data.N.iceon$bottomlayerTF <- as.numeric(data.N.iceon$depth>data.N.iceon$lower.bound)
 data.N.iceon$middlelayerTF <- as.numeric(data.N.iceon$depth>data.N.iceon$upper.bound & data.N.iceon$depth<=data.N.iceon$lower.bound)
@@ -482,11 +470,14 @@ data.N.iceon <- data.N.iceon[-which(data.N.iceon$lakename=="Trout Lake" & data.N
 #for rows where NO3N is not missing, count length, by depth (e.g. number of samples per depth)
 chems<-data.N.iceon[which(is.na(data.N.iceon$NO3N)==FALSE),]
 
+#this isn't used down the road...but useful for now
 chemdepths<-chems %>%
   group_by(lakename,sta,depth) %>%
   dplyr::summarize(ncount=length(NO3N)) %>% 
   arrange(lakename,ncount) %>% 
   as.data.frame()
+
+########## re do shallow/deep for upper/middle/bottom? #############
 
 
 #find average concentrations for "shallow" depths (e.g. surface depths)
@@ -546,6 +537,8 @@ data.NP.shallow$NP_diss<-(data.NP.shallow$DIN/14)/(data.NP.shallow$TDP/31)
 data.NP.shallow$NP_diss[which(data.NP.shallow$TDP==0)]<-(data.NP.shallow$DIN[which(data.NP.shallow$TDP==0)]/14)/(0.5/31)
 data.NP.deep$NP_diss<-(data.NP.deep$DIN/14)/(data.NP.deep$TDP/31)
 data.NP.deep$NP_diss[which(data.NP.deep$TDP==0)]<-(data.NP.deep$DIN[which(data.NP.deep$TDP==0)]/14)/(0.5/31)
+
+#########################################################################
 
 #find N type breakdown and P - hypsometrically-weighted
 data.NP.hyps <- data.N.iceon  %>% #for photic depths (no avering or anything)
