@@ -27,15 +27,15 @@
 rm(list = ls())
 
 #base_dir<-"/Users/steve.powers/Desktop/Sandboxes/2016Mar8pm_IcePowers"
-#start_dir<-as.character(getwd())
-#base_dir<-start_dir
+start_dir<-as.character(getwd())
+base_dir<-start_dir
 #base_dir<-substr(start_dir,1,nchar(start_dir)-nchar("/Scripts"))
-#data_dir<-paste(base_dir,"/Data",sep="")
-#figs_dir<-paste(base_dir,"/Figures",sep="")
+data_dir<-paste(base_dir,"/Data",sep="")
+figs_dir<-paste(base_dir,"/Figures",sep="")
 #base_dir<-"/Users/spowers/Desktop/Sandboxes/2016Mar16"
 #data_dir<-paste(c(base_dir,"/DataAsText"),collapse="")
 
-#setwd(base_dir)
+setwd(base_dir)
 library(plyr)
 library(dplyr)
 library(ggplot2)
@@ -102,7 +102,7 @@ data.lter.nutrients$lakeid <- gsub("WI", "Lake Wingra", data.lter.nutrients$lake
 data.lter.nutrients <- filter(data.lter.nutrients, lakeid != "Fish Lake" & lakeid != "Lake Mendota" & lakeid != "Lake Monona" & lakeid != "Lake Wingra")
 
 #read in here - calculated in script but currently not, because takes a while to calculate...
-mix<-read.csv("./Data/mix.csv", stringsAsFactors = FALSE)
+#mix<-read.csv("./Data/mix.csv", stringsAsFactors = FALSE)
 
 #######################################################################
 ############### LTER data - nutrients & physical ######################
@@ -213,42 +213,59 @@ sumO2.monthly <- sumO2.df.summary %>%
 #### still needed, but already output (and takes a while, so set as do <- 0 so don't need to rerun every time) ####
 
 data.lter.phys$lakestaday<-paste(data.lter.phys$lakeid,data.lter.phys$sta,data.lter.phys$sampledate)
+data.lter.nutrients$lakestaday<-paste(data.lter.nutrients$lakeid,data.lter.nutrients$sta,
+                                      as.Date(data.lter.nutrients$sampledate, format = "%m/%d/%Y"))
 lakestadays<-unique(data.lter.phys$lakestaday)
 
 do<-0
 if(do==1){
 lakestaday.df<-c()
-layerbound.df<-c()
-grad_range.df<-c()
-UMLbottom<-c()
-deltad<-c()
+#layerbound.df<-c()
+#grad_range.df<-c()
+#UMLbottom<-c()
+#deltad<-c()
+upper.bound<-c()
+lower.bound<-c()
 for(i in 1:length(lakestadays)){
   print(i)
   datai<-subset(data.lter.phys,data.lter.phys$lakestaday==lakestadays[i])
   datai<-datai[order(datai$depth),]
-  gradi.df<-na.omit(data.frame(datai$depth,datai$o2))
-  gradi<-gradi.df[,2]#$wtemp
-  grad.rangei<-max(na.omit(gradi))-min(na.omit(gradi))
-  depthi<-gradi.df[,1]#datai$depth
-  deltadi<-(gradi[-1]-gradi[-length(gradi)])/
-  (depthi[-1]-depthi[-length(depthi)])
-  mini<-sort(na.omit(deltadi))
-  if(length(mini)==1){mini<-c(mini,mini,mini)}
-  if(length(mini)==2){mini<-c(mini,mini[1])}
-  layerboundi<-mean(depthi[na.omit(which(deltadi %in% mini[1:3]))])
-  UMLbottomi<-layerboundi
-  if(is.na(layerboundi)==TRUE){layerboundi <- max(datai$depth)}
+  data2i<-subset(data.lter.nutrients,data.lter.nutrients$lakestaday==lakestadays[i] & data.lter.nutrients$rep==1)
+  data2i<-data2i[order(data2i$depth),]
+  depthCi<-na.omit(data.frame(data2i$depth,data2i$no3no2))
+  depthsi<-depthCi[,1]
+  if(length(depthsi)==2){depthsi<-c(depthsi[1],mean(c(depthsi[1],depthsi[2])),depthsi[2])}
+  if(length(depthsi) %in% c(1,0)){next()}
+    #  gradi.df<-na.omit(data.frame(datai$depth,datai$o2))
+  gradi.df<-na.omit(data.frame(datai$depth,datai$wtemp))
+#  gradi.df<-na.omit(data.frame(datai$depth,datai$o2))
+  if(length(gradi.df[,1])==0){next()}
+  deltadi<-abs(c(NA,(gradi.df[-1,2]-gradi.df[-length(gradi.df[,1]),2])/
+    (gradi.df[-1,1]-gradi.df[-length(gradi.df[,1]),1])))
+  gradi.df<-data.frame(gradi.df,deltadi)
+  gradi.upper.df<-gradi.df[which(gradi.df[,1]<=depthsi[2]),] 
+  gradi.lower.df<-gradi.df[which(gradi.df[,1]>depthsi[2]),] 
+#  max.upper.i<-max(gradi.upper.df$deltadi,na.rm=TRUE)
+#  max.lower.i<-max(gradi.lower.df$deltadi,na.rm=TRUE)
+  max.upper.i<-sort(na.omit(gradi.upper.df$deltadi),decreasing=TRUE)[1:2]
+  max.lower.i<-sort(na.omit(gradi.lower.df$deltadi),decreasing=TRUE)[1:2]
+  which.upper.i<-which(gradi.upper.df[,3] %in% max.upper.i)
+  which.lower.i<-which(gradi.lower.df[,3] %in% max.lower.i)
+  upper.bound.i<-mean(gradi.upper.df[c(which.upper.i,which.upper.i-1),1])
+  lower.bound.i<-mean(gradi.lower.df[c(which.lower.i,which.lower.i-1),1])
   lakestaday.df<-c(lakestaday.df,lakestadays[i])
-  layerbound.df<-c(layerbound.df,layerboundi)
-  UMLbottom<-c(UMLbottom,UMLbottomi)
-  grad_range.df<-c(grad_range.df,grad.rangei)
-  deltad<-c(deltad,mini[1])
+#  layerbound.df<-c(layerbound.df,layerboundi)
+  upper.bound<-c(upper.bound,upper.bound.i)
+  lower.bound<-c(lower.bound,lower.bound.i)
+#  grad_range.df<-c(grad_range.df,grad.rangei)
+#  deltad<-c(deltad,mini[1])
 }
-mix.df<-data.frame(lakestaday=lakestaday.df,layerbound=layerbound.df,grad_range=grad_range.df,UMLbottom,deltad=deltad)#,o2_sum)
+#mix.df<-data.frame(lakestaday=lakestaday.df,layerbound=layerbound.df,grad_range=grad_range.df,UMLbottom,deltad=deltad)#,o2_sum)
+mix.df<-data.frame(lakestaday=lakestaday.df,upper.bound,lower.bound)#,o2_sum)
 write.csv(mix.df,file="mix.csv")
 }
 
-#mix<-read.csv("./Data/mix.csv")
+mix<-read.csv("./Data/mix.csv")
 mix<-mix[,-1]
 
 ######################################################################################
@@ -432,21 +449,26 @@ data.N.iceon$TDN[which(data.N.iceon$TDN>1000)]<-NA
 
 #data.agg  %>% filter(lakeregloc == "Wisconsin")  %>% group_by(lakename)  %>% select(lakename, lakemaxdepth)  %>% unique()
 
-#data.N.iceon$maxdepth.set <- NA
-#data.N.iceon[which(data.N.iceon$lakename=="Allequash Lake"),]$maxdepth.set <- 8
-#data.N.iceon[which(data.N.iceon$lakename=="Big Musky Lake"),]$maxdepth.set <- 20
-#data.N.iceon[which(data.N.iceon$lakename=="Crystal Lake"),]$maxdepth.set <- 20
-#data.N.iceon[which(data.N.iceon$lakename=="Sparkling Lake"),]$maxdepth.set <- 19
-#data.N.iceon[which(data.N.iceon$lakename=="Trout Lake"),]$maxdepth.set <- 33
+data.N.iceon$maxdepth.set <- NA
+data.N.iceon[which(data.N.iceon$lakename=="Allequash Lake"),]$maxdepth.set <- 8
+data.N.iceon[which(data.N.iceon$lakename=="Big Musky Lake"),]$maxdepth.set <- 20
+data.N.iceon[which(data.N.iceon$lakename=="Crystal Lake"),]$maxdepth.set <- 20
+data.N.iceon[which(data.N.iceon$lakename=="Sparkling Lake"),]$maxdepth.set <- 20
+data.N.iceon[which(data.N.iceon$lakename=="Trout Lake"),]$maxdepth.set <- 33
 
 #not interested in Mendota, Monona, Fish Lake, or Wingra at the moment
 
 data.N.iceon <- filter(data.N.iceon, lakename != "Lake Mendota" & lakename != "Lake Monona" & lakename != "Lake Wingra" & lakename != "Fish Lake")
 
 #create layer columns (1 = TRUE, 0 = FALSE)
-data.N.iceon$upperlayerTF <- as.numeric(data.N.iceon$depth<data.N.iceon$UMLbottom)
-data.N.iceon$bottomlayerTF <- as.numeric(data.N.iceon$depth>data.N.iceon$UMLbottom)
-data.N.iceon$middlelayerTF <- as.numeric(data.N.iceon$depth==data.N.iceon$UMLbottom)
+#data.N.iceon$upperlayerTF <- as.numeric(data.N.iceon$depth<data.N.iceon$UMLbottom)
+#data.N.iceon$bottomlayerTF <- as.numeric(data.N.iceon$depth>data.N.iceon$UMLbottom)
+#data.N.iceon$middlelayerTF <- as.numeric(data.N.iceon$depth==data.N.iceon$UMLbottom)
+data.N.iceon$upperlayerTF <- as.numeric(data.N.iceon$depth<=data.N.iceon$upper.bound)
+data.N.iceon$bottomlayerTF <- as.numeric(data.N.iceon$depth>data.N.iceon$lower.bound)
+data.N.iceon$middlelayerTF <- as.numeric(data.N.iceon$depth>data.N.iceon$upper.bound & data.N.iceon$depth<=data.N.iceon$lower.bound)
+
+
 
 #getting rid of station 3 at Trout Lake - why?
 data.N.iceon <- data.N.iceon[-which(data.N.iceon$lakename=="Trout Lake" & data.N.iceon$sta==3),]
@@ -473,7 +495,7 @@ data.NP.shallow<-subset(data.N.iceon,data.N.iceon$depth==0)
 data.NP.shallow <- data.NP.shallow %>%
   #group by lake/sampledate/maxdepth
   group_by(lakename, year, sampledate, days.since.iceon.start, 
-           daynum_wateryr, maxdepth.actual, O2_sum,UMLbottom) %>%
+           daynum_wateryr, O2_sum) %>% #maxdepth.actual, O2_sum) %>% #,UMLbottom) %>%
   #find average N-type and P
   dplyr::summarize(NO3N=mean(NO3N,na.rm=TRUE), 
                    NH4N=mean(NH4N,na.rm=TRUE),
@@ -487,8 +509,9 @@ data.NP.shallow <- data.NP.shallow %>%
                    wtemp=mean(wtemp,na.rm=TRUE)) %>%
   #select columns of interest
   select(lakename, year, sampledate,days.since.iceon.start, daynum_wateryr, 
-         maxdepth.actual, NO3N, NH4N, DIN, DON, TDN, 
-         TDP, TN, TP, o2,O2_sum,wtemp,UMLbottom)
+#         maxdepth.actual, 
+         NO3N, NH4N, DIN, DON, TDN, 
+         TDP, TN, TP, o2,O2_sum,wtemp)#,UMLbottom)
 
 
 data.NP.deep<-subset(data.N.iceon,
@@ -500,8 +523,8 @@ data.NP.deep<-subset(data.N.iceon,
 
 data.NP.deep <- data.NP.deep %>%
   group_by(lakename, year, sampledate,days.since.iceon.start, daynum_wateryr, 
-           maxdepth, 
-           O2_sum,UMLbottom) %>%
+#           maxdepth, 
+           O2_sum) %>% #,UMLbottom) %>%
   #find average N-type and P
   dplyr::summarize(NO3N=mean(NO3N,na.rm=TRUE), 
                    NH4N=mean(NH4N,na.rm=TRUE),
@@ -515,8 +538,9 @@ data.NP.deep <- data.NP.deep %>%
                    wtemp=mean(wtemp,na.rm=TRUE)) %>%
   #select columns of interest
   select(lakename, year, sampledate,days.since.iceon.start, daynum_wateryr, 
-         maxdepth, NO3N, NH4N, DIN, DON, TDN, 
-         TDP, TN, TP, o2,O2_sum,wtemp,UMLbottom)
+#         maxdepth, 
+         NO3N, NH4N, DIN, DON, TDN, 
+         TDP, TN, TP, o2,O2_sum,wtemp)#,UMLbottom)
 
 data.NP.shallow$NP_diss<-(data.NP.shallow$DIN/14)/(data.NP.shallow$TDP/31)
 data.NP.shallow$NP_diss[which(data.NP.shallow$TDP==0)]<-(data.NP.shallow$DIN[which(data.NP.shallow$TDP==0)]/14)/(0.5/31)
@@ -526,84 +550,69 @@ data.NP.deep$NP_diss[which(data.NP.deep$TDP==0)]<-(data.NP.deep$DIN[which(data.N
 #find N type breakdown and P - hypsometrically-weighted
 data.NP.hyps <- data.N.iceon  %>% #for photic depths (no avering or anything)
                     select(lakename, year, sampledate,days.since.iceon.start, daynum_wateryr, 
-                           depth, maxdepth, upperlayerTF,bottomlayerTF, middlelayerTF, NO3N, 
-                           NH4N, DIN, DON, TDN, TDP, TN, TP, o2,O2_sum,wtemp,UMLbottom)
+                           depth, maxdepth.set, 
+                           upperlayerTF,bottomlayerTF, middlelayerTF, NO3N, 
+                           NH4N, DIN, DON, TDN, TDP, TN, TP, o2,O2_sum,wtemp)#,UMLbottom)
 
 data.NP.hyps<- data.NP.hyps %>% 
                    select(-depth) %>%
-                   group_by(lakename, year,sampledate,days.since.iceon.start,maxdepth,UMLbottom,
+                   group_by(lakename, year,sampledate,days.since.iceon.start,maxdepth.set,#UMLbottom,
                             O2_sum) %>% 
                    #summarize - mean N type weighted by depth
                    #
                    dplyr::summarize(
                     ######## NO3N ########
-                    NO3N.wt.middle = mean(NO3N*middlelayerTF/maxdepth,na.rm=TRUE),
-                    NO3N.wt.shallow = ifelse(NO3N.wt.middle>0,mean(NO3N*(UMLbottom-0.5)*upperlayerTF/maxdepth,na.rm=TRUE),
-                                            mean(NO3N*UMLbottom*upperlayerTF/maxdepth,na.rm=TRUE)),
-                    NO3N.wt.deep = ifelse(NO3N.wt.middle>0,mean(NO3N*bottomlayerTF*(maxdepth-(UMLbottom-0.5))/maxdepth,na.rm=TRUE),
-                                         mean(NO3N*bottomlayerTF*(maxdepth-UMLbottom)/maxdepth,na.rm=TRUE)),
+                    NO3N.wt.middle = mean(NO3N*middlelayerTF/maxdepth.set,na.rm=TRUE),
+                    NO3N.wt.deep = mean(NO3N*bottomlayerTF/maxdepth.set,na.rm=TRUE),
+                    NO3N.wt.shallow = mean(NO3N*upperlayerTF/maxdepth.set,na.rm=TRUE),
                     NO3N = NO3N.wt.shallow+NO3N.wt.deep+NO3N.wt.middle,
                     ######## NH4H ########
-                    NH4N.wt.middle = mean(NH4N*middlelayerTF/maxdepth,na.rm=TRUE),
-                    NH4N.wt.shallow = ifelse(NH4N.wt.middle>0,mean(NH4N*(UMLbottom-0.5)*upperlayerTF/maxdepth,na.rm=TRUE),
-                                            mean(NH4N*UMLbottom*upperlayerTF/maxdepth,na.rm=TRUE)),
-                    NH4N.wt.deep = ifelse(NH4N.wt.middle>0,mean(NH4N*bottomlayerTF*(maxdepth-(UMLbottom-0.5))/maxdepth,na.rm=TRUE),
-                                         mean(NH4N*bottomlayerTF*(maxdepth-UMLbottom)/maxdepth,na.rm=TRUE)),
+                    NH4N.wt.middle = mean(NH4N*middlelayerTF/maxdepth.set,na.rm=TRUE),
+                    NH4N.wt.deep = mean(NH4N*bottomlayerTF/maxdepth.set,na.rm=TRUE),
+                    NH4N.wt.shallow = mean(NH4N*upperlayerTF/maxdepth.set,na.rm=TRUE),
                     NH4N = NH4N.wt.shallow+NH4N.wt.deep+NH4N.wt.middle,
                     ######## DIN ########
-                    DIN.wt.middle = mean(DIN*middlelayerTF/maxdepth,na.rm=TRUE),
-                    DIN.wt.shallow = ifelse(DIN.wt.middle>0,mean(DIN*(UMLbottom-0.5)*upperlayerTF/maxdepth,na.rm=TRUE),
-                                            mean(DIN*UMLbottom*upperlayerTF/maxdepth,na.rm=TRUE)),
-                    DIN.wt.deep = ifelse(DIN.wt.middle>0,mean(DIN*bottomlayerTF*(maxdepth-(UMLbottom-0.5))/maxdepth,na.rm=TRUE),
-                                         mean(DIN*bottomlayerTF*(maxdepth-UMLbottom)/maxdepth,na.rm=TRUE)),
+                    DIN.wt.middle = mean(DIN*middlelayerTF/maxdepth.set,na.rm=TRUE),
+                    DIN.wt.deep = mean(DIN*bottomlayerTF/maxdepth.set,na.rm=TRUE),
+                    DIN.wt.shallow = mean(DIN*upperlayerTF/maxdepth.set,na.rm=TRUE),
                     DIN = DIN.wt.shallow+DIN.wt.deep+DIN.wt.middle,
                     ######## TDN ########
-                    TDN.wt.middle = mean(TDN*middlelayerTF/maxdepth,na.rm=TRUE),
-                    TDN.wt.shallow = ifelse(TDN.wt.middle>0,mean(TDN*(UMLbottom-0.5)*upperlayerTF/maxdepth,na.rm=TRUE),
-                                            mean(TDN*UMLbottom*upperlayerTF/maxdepth,na.rm=TRUE)),
-                    TDN.wt.deep = ifelse(TDN.wt.middle>0,mean(TDN*bottomlayerTF*(maxdepth-(UMLbottom-0.5))/maxdepth,na.rm=TRUE),
-                                         mean(TDN*bottomlayerTF*(maxdepth-UMLbottom)/maxdepth,na.rm=TRUE)),
+                    TDN.wt.middle = mean(TDN*middlelayerTF/maxdepth.set,na.rm=TRUE),
+                    TDN.wt.deep = mean(TDN*bottomlayerTF/maxdepth.set,na.rm=TRUE),
+                    TDN.wt.shallow = mean(TDN*upperlayerTF/maxdepth.set,na.rm=TRUE),
                     TDN = TDN.wt.shallow+TDN.wt.deep+TDN.wt.middle,
                     ######## TN ########
-                    TN.wt.middle = mean(TN*middlelayerTF/maxdepth,na.rm=TRUE),
-                    TN.wt.shallow = ifelse(TN.wt.middle>0,mean(TN*(UMLbottom-0.5)*upperlayerTF/maxdepth,na.rm=TRUE),
-                                            mean(TN*UMLbottom*upperlayerTF/maxdepth,na.rm=TRUE)),
-                    TN.wt.deep = ifelse(TN.wt.middle>0,mean(TN*bottomlayerTF*(maxdepth-(UMLbottom-0.5))/maxdepth,na.rm=TRUE),
-                                         mean(TN*bottomlayerTF*(maxdepth-UMLbottom)/maxdepth,na.rm=TRUE)),
+                    TN.wt.middle = mean(TN*middlelayerTF/maxdepth.set,na.rm=TRUE),
+                    TN.wt.deep = mean(TN*bottomlayerTF/maxdepth.set,na.rm=TRUE),
+                    TN.wt.shallow = mean(TN*upperlayerTF/maxdepth.set,na.rm=TRUE),
                     TN = TN.wt.shallow+TN.wt.deep+TN.wt.middle,
                     ######## DON ########
-                    DON.wt.middle = mean(DON*middlelayerTF/maxdepth,na.rm=TRUE),
-                    DON.wt.shallow = ifelse(DON.wt.middle>0,mean(DON*(UMLbottom-0.5)*upperlayerTF/maxdepth,na.rm=TRUE),
-                                            mean(DON*UMLbottom*upperlayerTF/maxdepth,na.rm=TRUE)),
-                    DON.wt.deep = ifelse(DON.wt.middle>0,mean(DON*bottomlayerTF*(maxdepth-(UMLbottom-0.5))/maxdepth,na.rm=TRUE),
-                                         mean(DON*bottomlayerTF*(maxdepth-UMLbottom)/maxdepth,na.rm=TRUE)),
+                    DON.wt.middle = mean(DON*middlelayerTF/maxdepth.set,na.rm=TRUE),
+                    DON.wt.deep = mean(DON*bottomlayerTF/maxdepth.set,na.rm=TRUE),
+                    DON.wt.shallow = mean(DON*upperlayerTF/maxdepth.set,na.rm=TRUE),
                     DON = DON.wt.shallow+DON.wt.deep+DON.wt.middle,
                     ######## TDP ########
-                    TDP.wt.middle = mean(TDP*middlelayerTF/maxdepth,na.rm=TRUE),
-                    TDP.wt.shallow = ifelse(TDP.wt.middle>0,mean(TDP*(UMLbottom-0.5)*upperlayerTF/maxdepth,na.rm=TRUE),
-                                            mean(TDP*UMLbottom*upperlayerTF/maxdepth,na.rm=TRUE)),
-                    TDP.wt.deep = ifelse(TDP.wt.middle>0,mean(TDP*bottomlayerTF*(maxdepth-(UMLbottom-0.5))/maxdepth,na.rm=TRUE),
-                                         mean(TDP*bottomlayerTF*(maxdepth-UMLbottom)/maxdepth,na.rm=TRUE)),
+                    TDP.wt.middle = mean(TDP*middlelayerTF/maxdepth.set,na.rm=TRUE),
+                    TDP.wt.deep = mean(TDP*bottomlayerTF/maxdepth.set,na.rm=TRUE),
+                    TDP.wt.shallow = mean(TDP*upperlayerTF/maxdepth.set,na.rm=TRUE),
                     TDP = TDP.wt.shallow+TDP.wt.deep+TDP.wt.middle,
                     ######## TP ########
-                    TP.wt.middle = mean(TP*middlelayerTF/maxdepth,na.rm=TRUE),
-                    TP.wt.shallow = ifelse(TP.wt.middle>0,mean(TP*(UMLbottom-0.5)*upperlayerTF/maxdepth,na.rm=TRUE),
-                                            mean(TP*UMLbottom*upperlayerTF/maxdepth,na.rm=TRUE)),
-                    TP.wt.deep = ifelse(TP.wt.middle>0,mean(TP*bottomlayerTF*(maxdepth-(UMLbottom-0.5))/maxdepth,na.rm=TRUE),
-                                         mean(TP*bottomlayerTF*(maxdepth-UMLbottom)/maxdepth,na.rm=TRUE)),
+                    TP.wt.middle = mean(TP*middlelayerTF/maxdepth.set,na.rm=TRUE),
+                    TP.wt.deep = mean(TP*bottomlayerTF/maxdepth.set,na.rm=TRUE),
+                    TP.wt.shallow = mean(TP*upperlayerTF/maxdepth.set,na.rm=TRUE),
                     TP = TP.wt.shallow+TP.wt.deep+TP.wt.middle
             ) %>% 
             as.data.frame()
 
 #(if # out divide by depth, remove entire section here...)
-data.NP.hyps$NO3N<-data.NP.hyps$NO3N#/data.NP.hyps$maxdepth
-data.NP.hyps$NH4N<-data.NP.hyps$NH4N#/data.NP.hyps$maxdepth
-data.NP.hyps$DIN<-data.NP.hyps$DIN#/data.NP.hyps$maxdepth
-data.NP.hyps$TDN<-data.NP.hyps$TDN#/data.NP.hyps$maxdepth
-data.NP.hyps$DON<-data.NP.hyps$DON#/data.NP.hyps$maxdepth
-data.NP.hyps$TN<-data.NP.hyps$TN#/data.NP.hyps$maxdepth
-data.NP.hyps$TDP<-data.NP.hyps$TDP#/data.NP.hyps$maxdepth
-data.NP.hyps$TP<-data.NP.hyps$TP#/data.NP.hyps$maxdepth
+#data.NP.hyps$NO3N<-data.NP.hyps$NO3N#/data.NP.hyps$maxdepth
+#data.NP.hyps$NH4N<-data.NP.hyps$NH4N#/data.NP.hyps$maxdepth
+#data.NP.hyps$DIN<-data.NP.hyps$DIN#/data.NP.hyps$maxdepth
+#data.NP.hyps$TDN<-data.NP.hyps$TDN#/data.NP.hyps$maxdepth
+#data.NP.hyps$DON<-data.NP.hyps$DON#/data.NP.hyps$maxdepth
+#data.NP.hyps$TN<-data.NP.hyps$TN#/data.NP.hyps$maxdepth
+#data.NP.hyps$TDP<-data.NP.hyps$TDP#/data.NP.hyps$maxdepth
+#data.NP.hyps$TP<-data.NP.hyps$TP#/data.NP.hyps$maxdepth
 
 #stoichiometry calculations
 data.NP.hyps$NP_diss<-(data.NP.hyps$DIN/14)/(data.NP.hyps$TDP/31)
@@ -702,19 +711,19 @@ plot.NPOhyps <-  ggplot(dataplot, aes(x=O2_sum, y=(value), group=lakename, colou
 #  ggtitle("Winter N, P, O2")
 plot.NPOhyps
 
-dataplot<-data.NP.hyps
-dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","Lake Mendota","Lake Wingra"))
-dataplot<-dataplot %>% gather(depth,value,which(names(dataplot) %in% c("UMLbottom","maxdepth")))
-dataplot$depth[which(dataplot$depth=="UMLbottom")]<-"upper layer"
+#dataplot<-data.NP.hyps
+#dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","Lake Mendota","Lake Wingra"))
+#dataplot<-dataplot %>% gather(depth,value,which(names(dataplot) %in% c("UMLbottom","maxdepth")))
+#dataplot$depth[which(dataplot$depth=="UMLbottom")]<-"upper layer"
 
-plot.layers <-  ggplot(dataplot, aes(x=days.since.iceon.start, y=value,group=depth,color=depth)) +
-  geom_point()+
-  scale_colour_manual(values=c("darkgray","#00BA38"))+
-  scale_y_reverse(lim=c(32,0))+ylab("Depth (m)")+xlab("Days since iceon")+xlim(0,150)+
-  theme_bw()+#scale_color_gradient(name = "O2 mg/L")+
-  facet_grid(~lakename,scales="free_y") +
-  theme(strip.text.x=element_text())
-plot.layers
+#plot.layers <-  ggplot(dataplot, aes(x=days.since.iceon.start, y=value,group=depth,color=depth)) +
+#  geom_point()+
+#  scale_colour_manual(values=c("darkgray","#00BA38"))+
+#  scale_y_reverse(lim=c(32,0))+ylab("Depth (m)")+xlab("Days since iceon")+xlim(0,150)+
+#  theme_bw()+#scale_color_gradient(name = "O2 mg/L")+
+#  facet_grid(~lakename,scales="free_y") +
+#  theme(strip.text.x=element_text())
+#plot.layers
 
 ##########################################
 setwd(figs_dir)
@@ -743,9 +752,9 @@ png(file="DINTDP.time.depth.png",width=9,height=5,units="in",res=300)
 print(plot.DINTDP.time.depth)
 dev.off()
 
-png(file="layers.png",width=12,height=4,units="in",res=300)
-print(plot.layers)
-dev.off()
+#png(file="layers.png",width=12,height=4,units="in",res=300)
+#print(plot.layers)
+#dev.off()
 
 setwd(base_dir)
 
