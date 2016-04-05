@@ -120,7 +120,7 @@ data.lter.phys <- select(data.lter.phys, lakeid, year4, daynum, sampledate, dept
 
 #correct incorrect (as per discussion with Noah Lottig?) O2 measurement for Sparkling Lake
 #water temp and O2 had been switched in downloaded data
-which_correct_Sparkling_18Jan2011<-which(data.lter.phys$lakeid=="SP" & data.lter.phys$sampledate=="2011-01-18")
+which_correct_Sparkling_18Jan2011<-which(data.lter.phys$lakeid=="Sparkling Lake" & data.lter.phys$sampledate=="2011-01-18")
 wtemp_correct<-data.lter.phys$o2[which_correct_Sparkling_18Jan2011]
 wo2_correct<-data.lter.phys$wtemp[which_correct_Sparkling_18Jan2011]
 data.lter.phys$wtemp[which_correct_Sparkling_18Jan2011]<-wtemp_correct
@@ -533,66 +533,98 @@ data.NP.deep <- data.NP.deep %>%
          NO3N, NH4N, DIN, DON, TDN, 
          TDP, TN, TP, o2,O2_sum,wtemp)#,UMLbottom)
 
+data.NP.middle<-subset(data.N.iceon,
+                     (data.N.iceon$lakename=="Allequash Lake" & data.N.iceon$depth>0 & data.N.iceon$depth<6) |
+                       (data.N.iceon$lakename=="Big Musky Lake" & data.N.iceon$depth>0 & data.N.iceon$depth<16)|
+                       (data.N.iceon$lakename=="Crystal Lake" & data.N.iceon$depth>0 & data.N.iceon$depth<15)|
+                       (data.N.iceon$lakename=="Sparkling Lake" & data.N.iceon$depth>0 & data.N.iceon$depth<15)|
+                       (data.N.iceon$lakename=="Trout Lake" & data.N.iceon$depth>0 & data.N.iceon$depth<25))
+
+data.NP.middle <- data.NP.middle %>%
+  group_by(lakename, year, sampledate,days.since.iceon.start, daynum_wateryr, 
+           #           maxdepth, 
+           O2_sum) %>% #,UMLbottom) %>%
+  #find average N-type and P
+  dplyr::summarize(NO3N=mean(NO3N,na.rm=TRUE), 
+                   NH4N=mean(NH4N,na.rm=TRUE),
+                   DIN=mean(DIN,na.rm=TRUE),
+                   DON=mean(DON,na.rm=TRUE),
+                   TDN=mean(TDN,na.rm=TRUE),
+                   TDP=mean(TDP,na.rm=TRUE),
+                   TN=mean(TN,na.rm=TRUE),
+                   TP=mean(TP,na.rm=TRUE),
+                   o2=mean(o2,na.rm=TRUE),
+                   wtemp=mean(wtemp,na.rm=TRUE)) %>%
+  #select columns of interest
+  select(lakename, year, sampledate,days.since.iceon.start, daynum_wateryr, 
+         #         maxdepth, 
+         NO3N, NH4N, DIN, DON, TDN, 
+         TDP, TN, TP, o2,O2_sum,wtemp)#,UMLbottom)
+
 data.NP.shallow$NP_diss<-(data.NP.shallow$DIN/14)/(data.NP.shallow$TDP/31)
 data.NP.shallow$NP_diss[which(data.NP.shallow$TDP==0)]<-(data.NP.shallow$DIN[which(data.NP.shallow$TDP==0)]/14)/(0.5/31)
 data.NP.deep$NP_diss<-(data.NP.deep$DIN/14)/(data.NP.deep$TDP/31)
 data.NP.deep$NP_diss[which(data.NP.deep$TDP==0)]<-(data.NP.deep$DIN[which(data.NP.deep$TDP==0)]/14)/(0.5/31)
+data.NP.middle$NP_diss<-(data.NP.middle$DIN/14)/(data.NP.middle$TDP/31)
+data.NP.middle$NP_diss[which(data.NP.middle$TDP==0)]<-(data.NP.middle$DIN[which(data.NP.middle$TDP==0)]/14)/(0.5/31)
+
 
 #########################################################################
 
 #find N type breakdown and P - hypsometrically-weighted
 data.NP.hyps <- data.N.iceon  %>% #for photic depths (no avering or anything)
                     select(lakename, year, sampledate,days.since.iceon.start, daynum_wateryr, 
-                           depth, maxdepth.set, 
-                           upperlayerTF,bottomlayerTF, middlelayerTF, NO3N, 
-                           NH4N, DIN, DON, TDN, TDP, TN, TP, o2,O2_sum,wtemp)#,UMLbottom)
+                           depth, maxdepth.t, 
+                           upperlayerTF,bottomlayerTF, middlelayerTF, 
+                           upper.bound,lower.bound,
+                           NO3N, NH4N, DIN, DON, TDN, TDP, TN, TP, o2,O2_sum,wtemp)#,UMLbottom)
 
 data.NP.hyps<- data.NP.hyps %>% 
                    select(-depth) %>%
-                   group_by(lakename, year,sampledate,days.since.iceon.start,maxdepth.set,#UMLbottom,
+                   group_by(lakename, year,sampledate,days.since.iceon.start,maxdepth.t,#UMLbottom,
                             O2_sum) %>% 
                    #summarize - mean N type weighted by depth
                    #
                    dplyr::summarize(
                     ######## NO3N ########
-                    NO3N.wt.middle = mean(NO3N*middlelayerTF/maxdepth.set,na.rm=TRUE),
-                    NO3N.wt.deep = mean(NO3N*bottomlayerTF/maxdepth.set,na.rm=TRUE),
-                    NO3N.wt.shallow = mean(NO3N*upperlayerTF/maxdepth.set,na.rm=TRUE),
+                    NO3N.wt.middle = mean(NO3N[which(middlelayerTF==1)],na.rm=TRUE)*(lower.bound[1]-upper.bound[1])/maxdepth.t[1],
+                    NO3N.wt.deep = mean(NO3N[which(bottomlayerTF==1)],na.rm=TRUE)*(maxdepth.t[1]-lower.bound[1])/maxdepth.t[1],
+                    NO3N.wt.shallow = mean(NO3N[which(upperlayerTF==1)],na.rm=TRUE)*(upper.bound[1])/maxdepth.t[1],
                     NO3N = NO3N.wt.shallow+NO3N.wt.deep+NO3N.wt.middle,
                     ######## NH4H ########
-                    NH4N.wt.middle = mean(NH4N*middlelayerTF/maxdepth.set,na.rm=TRUE),
-                    NH4N.wt.deep = mean(NH4N*bottomlayerTF/maxdepth.set,na.rm=TRUE),
-                    NH4N.wt.shallow = mean(NH4N*upperlayerTF/maxdepth.set,na.rm=TRUE),
+                    NH4N.wt.middle = mean(NH4N[which(middlelayerTF==1)],na.rm=TRUE)*(lower.bound[1]-upper.bound[1])/maxdepth.t[1],
+                    NH4N.wt.deep = mean(NH4N[which(bottomlayerTF==1)],na.rm=TRUE)*(maxdepth.t[1]-lower.bound[1])/maxdepth.t[1],
+                    NH4N.wt.shallow = mean(NH4N[which(upperlayerTF==1)],na.rm=TRUE)*(upper.bound[1])/maxdepth.t[1],
                     NH4N = NH4N.wt.shallow+NH4N.wt.deep+NH4N.wt.middle,
                     ######## DIN ########
-                    DIN.wt.middle = mean(DIN*middlelayerTF/maxdepth.set,na.rm=TRUE),
-                    DIN.wt.deep = mean(DIN*bottomlayerTF/maxdepth.set,na.rm=TRUE),
-                    DIN.wt.shallow = mean(DIN*upperlayerTF/maxdepth.set,na.rm=TRUE),
+                    DIN.wt.middle = mean(DIN[which(middlelayerTF==1)],na.rm=TRUE)*(lower.bound[1]-upper.bound[1])/maxdepth.t[1],
+                    DIN.wt.deep = mean(DIN[which(bottomlayerTF==1)],na.rm=TRUE)*(maxdepth.t[1]-lower.bound[1])/maxdepth.t[1],
+                    DIN.wt.shallow = mean(DIN[which(upperlayerTF==1)],na.rm=TRUE)*(upper.bound[1])/maxdepth.t[1],
                     DIN = DIN.wt.shallow+DIN.wt.deep+DIN.wt.middle,
                     ######## TDN ########
-                    TDN.wt.middle = mean(TDN*middlelayerTF/maxdepth.set,na.rm=TRUE),
-                    TDN.wt.deep = mean(TDN*bottomlayerTF/maxdepth.set,na.rm=TRUE),
-                    TDN.wt.shallow = mean(TDN*upperlayerTF/maxdepth.set,na.rm=TRUE),
+                    TDN.wt.middle = mean(TDN[which(middlelayerTF==1)],na.rm=TRUE)*(lower.bound[1]-upper.bound[1])/maxdepth.t[1],
+                    TDN.wt.deep = mean(TDN[which(bottomlayerTF==1)],na.rm=TRUE)*(maxdepth.t[1]-lower.bound[1])/maxdepth.t[1],
+                    TDN.wt.shallow = mean(TDN[which(upperlayerTF==1)],na.rm=TRUE)*(upper.bound[1])/maxdepth.t[1],
                     TDN = TDN.wt.shallow+TDN.wt.deep+TDN.wt.middle,
                     ######## TN ########
-                    TN.wt.middle = mean(TN*middlelayerTF/maxdepth.set,na.rm=TRUE),
-                    TN.wt.deep = mean(TN*bottomlayerTF/maxdepth.set,na.rm=TRUE),
-                    TN.wt.shallow = mean(TN*upperlayerTF/maxdepth.set,na.rm=TRUE),
+                    TN.wt.middle = mean(TN[which(middlelayerTF==1)],na.rm=TRUE)*(lower.bound[1]-upper.bound[1])/maxdepth.t[1],
+                    TN.wt.deep = mean(TN[which(bottomlayerTF==1)],na.rm=TRUE)*(maxdepth.t[1]-lower.bound[1])/maxdepth.t[1],
+                    TN.wt.shallow = mean(TN[which(upperlayerTF==1)],na.rm=TRUE)*(upper.bound[1])/maxdepth.t[1],
                     TN = TN.wt.shallow+TN.wt.deep+TN.wt.middle,
                     ######## DON ########
-                    DON.wt.middle = mean(DON*middlelayerTF/maxdepth.set,na.rm=TRUE),
-                    DON.wt.deep = mean(DON*bottomlayerTF/maxdepth.set,na.rm=TRUE),
-                    DON.wt.shallow = mean(DON*upperlayerTF/maxdepth.set,na.rm=TRUE),
+                    DON.wt.middle = mean(DON[which(middlelayerTF==1)],na.rm=TRUE)*(lower.bound[1]-upper.bound[1])/maxdepth.t[1],
+                    DON.wt.deep = mean(DON[which(bottomlayerTF==1)],na.rm=TRUE)*(maxdepth.t[1]-lower.bound[1])/maxdepth.t[1],
+                    DON.wt.shallow = mean(DON[which(upperlayerTF==1)],na.rm=TRUE)*(upper.bound[1])/maxdepth.t[1],
                     DON = DON.wt.shallow+DON.wt.deep+DON.wt.middle,
                     ######## TDP ########
-                    TDP.wt.middle = mean(TDP*middlelayerTF/maxdepth.set,na.rm=TRUE),
-                    TDP.wt.deep = mean(TDP*bottomlayerTF/maxdepth.set,na.rm=TRUE),
-                    TDP.wt.shallow = mean(TDP*upperlayerTF/maxdepth.set,na.rm=TRUE),
+                    TDP.wt.middle = mean(TDP[which(middlelayerTF==1)],na.rm=TRUE)*(lower.bound[1]-upper.bound[1])/maxdepth.t[1],
+                    TDP.wt.deep = mean(TDP[which(bottomlayerTF==1)],na.rm=TRUE)*(maxdepth.t[1]-lower.bound[1])/maxdepth.t[1],
+                    TDP.wt.shallow = mean(TDP[which(upperlayerTF==1)],na.rm=TRUE)*(upper.bound[1])/maxdepth.t[1],
                     TDP = TDP.wt.shallow+TDP.wt.deep+TDP.wt.middle,
                     ######## TP ########
-                    TP.wt.middle = mean(TP*middlelayerTF/maxdepth.set,na.rm=TRUE),
-                    TP.wt.deep = mean(TP*bottomlayerTF/maxdepth.set,na.rm=TRUE),
-                    TP.wt.shallow = mean(TP*upperlayerTF/maxdepth.set,na.rm=TRUE),
+                    TP.wt.middle = mean(TP[which(middlelayerTF==1)],na.rm=TRUE)*(lower.bound[1]-upper.bound[1])/maxdepth.t[1],
+                    TP.wt.deep = mean(TP[which(bottomlayerTF==1)],na.rm=TRUE)*(maxdepth.t[1]-lower.bound[1])/maxdepth.t[1],
+                    TP.wt.shallow = mean(TP[which(upperlayerTF==1)],na.rm=TRUE)*(upper.bound[1])/maxdepth.t[1],
                     TP = TP.wt.shallow+TP.wt.deep+TP.wt.middle
             ) %>% 
             as.data.frame()
@@ -614,10 +646,12 @@ data.NP.hyps$NP_diss[which(data.NP.hyps$TDP==0)]<-(data.NP.hyps$DIN[which(data.N
 #name "type" (e.g. shallow, deeph, hypsometrically-weighted whole lake)
 data.NP.shallow$method<-"shallow"
 data.NP.deep$method<-"deep"
+data.NP.middle$method<-"middle"
 data.NP.hyps$method<-"whole (hyps-wt)"
 
 data.NP.shallow$ptsize<-0.5
 data.NP.deep$ptsize<-0.5
+data.NP.middle$ptsize<-0.5
 data.NP.hyps$ptsize<-.55
 
 ############################################################
@@ -638,26 +672,27 @@ plot.NPtime.hyps <-  ggplot(dataplot, aes(x=days.since.iceon.start, y=(value), g
 #  ggtitle("Winter N and P, whole lake")
 plot.NPtime.hyps
 
-dataplot<-rbind.fill(data.NP.shallow,data.NP.deep)
+dataplot<-rbind.fill(data.NP.shallow,data.NP.deep,data.NP.middle)
 dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","Lake Mendota","Lake Wingra"))
 dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("NO3N","NH4N","DIN","TDP")))
 dataplot$form <- factor(dataplot$form, levels=c("NO3N","NH4N","DIN","TDP"))
 
 #color="#619CFF"
 plot.NPtime.depth <-  ggplot(dataplot, aes(x=days.since.iceon.start, y=log10(value), group=method, colour=method)) +
-  geom_point(size=0.5) + ylab("Log10 Conc (ug/L)") + xlab("Days since iceon")+xlim(0,150)+
+  geom_point(size=0.6) + ylab("Log10 Conc (ug/L)") + xlab("Days since iceon")+xlim(0,150)+
   theme_bw()+#scale_color_gradient(name = "UML bottom")+
-  geom_smooth(aes(color=method))+#col="black")+#aes(color = form)) +
+  geom_smooth(aes(color=method),se=FALSE,lwd=0.5)+#col="black")+#aes(color = form)) +
   facet_grid(lakename~form,scales="free_y") +
   theme(strip.text.x=element_text())#+
 #  ggtitle("Winter N and P, surface and deep")
 plot.NPtime.depth
 
-plot.NPO.depth <-  ggplot(dataplot, aes(x=o2, y=log10(value), group=method, colour=method)) +
+plot.NPO.depth <-  ggplot(dataplot, aes(x=o2, y=log10(value), colour=method)) +
   geom_point(size=0.5) + ylab("Log10 Conc (ug/L)") + xlab("O2 Conc (mg/L)")+
   theme_bw()+#scale_color_gradient(name = "UML bottom")+
 #  geom_smooth(aes(color=method),se=FALSE)+#col="black")+#aes(color = form)) +
-  geom_smooth(col="dark gray",se=FALSE)+#col="black")+#aes(color = form)) +
+#  geom_smooth(col="dark gray",se=FALSE)+#col="black")+#aes(color = form)) +
+  geom_smooth(col="black",lwd=0.6)+#,se=FALSE)+#col="black")+#aes(color = form)) +
   facet_grid(lakename~form,scales="free_y") +
   theme(strip.text.x=element_text())#+
 #  ggtitle("Winter N and P, surface and deep")
