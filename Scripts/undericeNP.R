@@ -480,8 +480,8 @@ chemdepths<-chems %>%
   arrange(lakename,ncount) %>% 
   as.data.frame()
 
-########## re do shallow/deep for upper/middle/bottom? #############
 
+########## shallow, deep, and middle calculations ############
 
 #find average concentrations for "shallow" depths (e.g. surface depths)
 data.NP.shallow<-subset(data.N.iceon,data.N.iceon$depth==0)
@@ -572,7 +572,7 @@ data.NP.middle$NP_diss<-(data.NP.middle$DIN/14)/(data.NP.middle$TDP/31)
 data.NP.middle$NP_diss[which(data.NP.middle$TDP==0)]<-(data.NP.middle$DIN[which(data.NP.middle$TDP==0)]/14)/(0.5/31)
 
 
-#########################################################################
+############### hyposmetrically-weighted nutrient concentrations #####################
 
 #find N type breakdown and P - hypsometrically-weighted
 data.NP.hyps <- data.N.iceon  %>% #for photic depths (no avering or anything)
@@ -701,6 +701,15 @@ plot.NPO.depth <-  ggplot(dataplot, aes(x=o2, y=log10(value), colour=method)) +
 #  ggtitle("Winter N and P, surface and deep")
 plot.NPO.depth
 
+#### all lakes together for nutrients/O2 ####
+
+plot.all.NPO.depth <- ggplot(dataplot, aes(x=o2, y=log10(value), colour=lakename)) + #shape = lakename)) +
+  geom_point(size=0.5) + ylab("Log10 Conc (ug/L)") + xlab("O2 Conc (mg/L)")+
+  theme_bw()+
+  geom_smooth(col="black",lwd=0.6)+
+  facet_grid(~form,scales="free_y") 
+plot.all.NPO.depth
+
 dataplot<-rbind.fill(data.NP.hyps,data.NP.shallow,data.NP.deep)
 dataplot<-subset(dataplot,!dataplot$lakename %in% c("Lake Monona", "Fish Lake","Lake Mendota","Lake Wingra"))
 dataplot<-dataplot %>% gather(form,value,which(names(dataplot) %in% c("NO3N","NH4N","DIN","TDP")))
@@ -769,6 +778,10 @@ dev.off()
 
 png(file="NPO.depth.png",width=7,height=7,units="in",res=300)
 print(plot.NPO.depth)
+dev.off()
+
+png(file="all.NPO.depth.png", width = 7, height = 5, units = "in", res = 300)
+print(plot.all.NPO.depth)
 dev.off()
 
 png(file="Otime.depth.png",width=9,height=5,units="in",res=300)
