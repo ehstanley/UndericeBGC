@@ -684,7 +684,7 @@ dataplot$form <- factor(dataplot$form, levels=c("NO3N","NH4N","DIN","TDP"))
 plot.NPtime.depth <-  ggplot(dataplot, aes(x=days.since.iceon.start, y=log10(value), group=method, colour=method)) +
   geom_point(size=0.6) + ylab("Log10 Conc (ug/L)") + xlab("Days since iceon")+xlim(0,150)+
   theme_bw()+#scale_color_gradient(name = "UML bottom")+
-  geom_smooth(aes(color=method),se=FALSE,lwd=0.5)+#col="black")+#aes(color = form)) +
+  geom_smooth(aes(color=method),se=FALSE,lwd=0.8)+#col="black")+#aes(color = form)) +
   facet_grid(lakename~form,scales="free_y") +
   theme(strip.text.x=element_text())#+
 #  ggtitle("Winter N and P, surface and deep")
