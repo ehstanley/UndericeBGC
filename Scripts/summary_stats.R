@@ -114,9 +114,18 @@ for (i in unique(data.N.all$lakename)) {
     out <- c(out, sum.stats)
 }
 
-#collapse lists into data frame
-data.N.summary <- do.call("rbind", out) %>% as.data.frame()
+#################################################################################################
 
+#technique from: http://stackoverflow.com/questions/27153979/converting-nested-list-unequal-length-to-data-frame
+indx <- sapply(out, length)
+
+out.df <- as.data.frame(do.call(rbind,lapply(out, `length<-`, max(indx))))
+
+colnames(out.df) <- names(out[[which.max(indx)]])
+
+data.N.summary <- out.df
+
+#################################################################################################
 #fix row names
 sum.names <- row.names(data.N.summary)
 
@@ -137,6 +146,9 @@ data.summary.stats <- merge(meta.agg, data.summary.stats, by = "lakename")
 data.summary.stats <- data.summary.stats[,c(1:5, 7:8, 6, 9:16)]
 
 data.summary.stats <- arrange(data.summary.stats, lakename, category)
+
+#replace NA's in "NA's" column with zero
+data.summary.stats$`NA's` <- ifelse(is.na(data.summary.stats$`NA's`), 0, data.summary.stats$`NA's`)
 
 #some weeeeeeird negative DON values for Sparkling Lake...that's...well, that's not right
 #actually, there are quite a few negative DON values, which...can't be right
