@@ -407,9 +407,6 @@ data.subset.ice <- dplyr::mutate(data.subset.ice, DIN=NO3N+NH4N, DON=TDN-NO3N-NH
 
 data.N.iceon<-data.subset.ice
 
-#for importing into summary_stats.R
-saveRDS(data.N.iceon, "data_N_iceon.rds")
-
 #########################################################################################################################
 ########################### CHECKING SPECIFIC INSTANCES - MOVE ALONG ####################################################
 #########################################################################################################################
@@ -463,6 +460,10 @@ data.N.iceon$middlelayerTF <- as.numeric(data.N.iceon$depth>data.N.iceon$upper.b
 
 #getting rid of station 3 at Trout Lake - why?
 data.N.iceon <- data.N.iceon[-which(data.N.iceon$lakename=="Trout Lake" & data.N.iceon$sta==3),]
+
+
+#for importing into summary_stats.R
+saveRDS(data.N.iceon, "data_N_iceon.rds")
 
 #getmaxdepth<-data.N.iceon %>% 
   #group_by(lakename,year,sampledate) %>%
@@ -735,6 +736,25 @@ plot.DINTDP.time.depth <-  ggplot(dataplot, aes(x=days.since.iceon.start, y=log1
   theme(strip.text.x=element_text())#+
 #  ggtitle("Winter N:P")
 plot.DINTDP.time.depth
+
+
+plot.DINTDP.O <-  ggplot(dataplot, aes(x=o2, y=log10(NP_diss), colour=method)) +
+  geom_point(size=0.75) + ylab("Log10 DIN:TDP") + xlab("O2")+
+  theme_bw()+#scale_color_gradient(name = "UML bottom")+
+  geom_smooth(se=FALSE)+#col="black")+#aes(color = form)) +
+  facet_wrap(~lakename,ncol=3) +
+  geom_abline(intercept=log10(15),slope=0,linetype=2)+
+  #  geom_abline(intercept=log10(7.5),slope=0,linetype=2)+
+  theme(strip.text.x=element_text())#+
+#  ggtitle("Winter N:P")
+plot.DINTDP.O
+
+
+ggplot(dataplot, aes(x=o2, y = log10(NP_diss))) +
+  geom_point() +
+  geom_smooth() +
+  facet_wrap(~lakename)
+
 
 #dataplot<-rbind.fill(data.NP.hyps,data.NP.shallow,data.NP.deep)
 dataplot<-data.NP.hyps
