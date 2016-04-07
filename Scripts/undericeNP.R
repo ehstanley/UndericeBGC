@@ -30,8 +30,8 @@ rm(list = ls())
 start_dir<-as.character(getwd())
 base_dir<-start_dir
 #base_dir<-substr(start_dir,1,nchar(start_dir)-nchar("/Scripts"))
-data_dir<-paste(base_dir,"/Data",sep="")
-figs_dir<-paste(base_dir,"/Figures",sep="")
+#data_dir<-paste(base_dir,"/Data",sep="")
+#figs_dir<-paste(base_dir,"/Figures",sep="")
 #base_dir<-"/Users/spowers/Desktop/Sandboxes/2016Mar16"
 #data_dir<-paste(c(base_dir,"/DataAsText"),collapse="")
 
@@ -50,15 +50,15 @@ library(MESS)
 #######################################################################
 
 # read in original synthesis data for Wisconsin lakes (from synthesis dataset) - used for iceon/iceoff bounding dates
-data.agg.orig <- read.csv("./Data/wisconsin_under_ice_aggregate_lakes.csv", stringsAsFactors = FALSE)
+data.agg.orig <- read.csv("Data/Original/wisconsin_under_ice_aggregate_lakes.csv", stringsAsFactors = FALSE)
 
 # elevations (see script lake_depths.R for how lake depths were calculated based on lake elevation in m above sea level)
-data.elevs.orig <- read.csv("./Data/final_elevs.csv", stringsAsFactors = FALSE)
+data.elevs.orig <- read.csv("Data/Outputs/final_elevs.csv", stringsAsFactors = FALSE)
 
 data.elevs <- data.elevs.orig %>% rename(year4 = yr_winter)
 
 # physical limnology data for LTER lakes
-data.lter.phys.orig <- read.csv("./Data/physical_limnology_of_the_north_temperate_lakes_primary_study_lakes_ALL.csv", 
+data.lter.phys.orig <- read.csv("Data/Originals/physical_limnology_of_the_north_temperate_lakes_primary_study_lakes_ALL.csv", 
                                 stringsAsFactors = FALSE)
 
 data.lter.phys <- data.lter.phys.orig
@@ -82,7 +82,7 @@ data.lter.phys <- filter(data.lter.phys, lakeid != "Fish Lake" & lakeid != "Lake
 data.lter.phys <- merge(data.lter.phys, data.elevs, by = c("lakeid", "year4"))
 
 # nutrient data for LTER lakes
-data.lter.nutrients.orig <- read.csv("./Data/chemical_limnology_of_north_temperate_lakes_lter_primary_study_lakes_nutrients_ph_and_carbon_ALL.csv", 
+data.lter.nutrients.orig <- read.csv("Data/Original/chemical_limnology_of_north_temperate_lakes_lter_primary_study_lakes_nutrients_ph_and_carbon_ALL.csv", 
                                      stringsAsFactors = FALSE)
 
 data.lter.nutrients <- data.lter.nutrients.orig
@@ -102,7 +102,7 @@ data.lter.nutrients$lakeid <- gsub("WI", "Lake Wingra", data.lter.nutrients$lake
 data.lter.nutrients <- filter(data.lter.nutrients, lakeid != "Fish Lake" & lakeid != "Lake Mendota" & lakeid != "Lake Monona" & lakeid != "Lake Wingra")
 
 #read in here - calculated in script but currently not, because takes a while to calculate...
-mix<-read.csv("./Data/mix.csv", stringsAsFactors = FALSE)
+mix<-read.csv("Data/mix.csv", stringsAsFactors = FALSE)
 
 ##########################################################################
 ############## LTER data - physical (oxygen) calculations ################
@@ -260,10 +260,10 @@ for(i in 1:length(lakestadays)){
 }
 #mix.df<-data.frame(lakestaday=lakestaday.df,layerbound=layerbound.df,grad_range=grad_range.df,UMLbottom,deltad=deltad)#,o2_sum)
 mix.df<-data.frame(lakestaday=lakestaday.df,upper.bound,lower.bound)#,o2_sum)
-write.csv(mix.df,file="mix.csv")
+write.csv(mix.df,file="Data/Outputs/mix.csv")
 }
 
-#mix<-read.csv("./Data/mix.csv")
+#mix<-read.csv("Data/Outputs/mix.csv")
 mix<-mix[,-1]
 
 ######################################################################################
@@ -432,7 +432,7 @@ lowO2TR<-subset(data.lter.phys,data.lter.phys$lakeid=="TR" & data.lter.phys$samp
 
 lowO2<-rbind(lowO2SP,lowO2TR)
 setwd(base_dir)
-write.csv(lowO2,"lowO2.csv")
+write.csv(lowO2,"Data/Outputs/lowO2.csv")
 setwd()
 
 #############################################################################

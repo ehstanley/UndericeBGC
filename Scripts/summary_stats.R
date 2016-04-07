@@ -22,7 +22,7 @@ library(dplyr)
 
 #aggregate lake data from synthesis (for metadata)
 
-data.agg <- read.csv("./Data/wisconsin_under_ice_aggregate_lakes.csv", stringsAsFactors = FALSE)
+data.agg <- read.csv("Data/Original/wisconsin_under_ice_aggregate_lakes.csv", stringsAsFactors = FALSE)
 
 meta.agg <- select(data.agg, lakename, stationlat, stationlong, lakearea, watershedarea) %>% unique()
 
@@ -34,7 +34,7 @@ meta.agg$lakename[which(meta.agg$lakename=="Big Muskellunge Lake")]<-"Big Musky 
 
 #starting from data.N.iceon for NTL-LTER data (see undericeNP.R for how calculated)
 
-data.N.iceon <- readRDS("./Data/data_N_iceon.rds")
+data.N.iceon <- readRDS("Data/Outputs/data_N_iceon.rds")
 
 head(data.N.iceon)
 
@@ -160,7 +160,7 @@ data.summary.stats$`NA's` <- ifelse(is.na(data.summary.stats$`NA's`), 0, data.su
 #matches output in data.N.final
 
 #write to csv
-write.csv(data.summary.stats, "./Data/data_var_summary.csv", row.names = FALSE)
+write.csv(data.summary.stats, "Data/data_var_summary.csv", row.names = FALSE)
 
 ###############################################################################################
 
@@ -178,7 +178,7 @@ library(dplyr)
 
 #starting from data.N.iceon for NTL-LTER data (see undericeNP.R for how calculated)
 
-data.N.iceon <- readRDS("./Data/data_N_iceon.rds")
+data.N.iceon <- readRDS("Data/data_N_iceon.rds")
 
 head(data.N.iceon)
 
@@ -302,4 +302,4 @@ surface.summary.counts <- arrange(surface.summary.counts, lakename, variable)
 
 #write to csv
 
-write.csv(surface.summary.counts, "./Data/surface_summary_table.csv", row.names = FALSE)
+write.csv(surface.summary.counts, "Data/Outputs/surface_summary_table.csv", row.names = FALSE)

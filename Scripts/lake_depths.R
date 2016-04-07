@@ -4,7 +4,7 @@
 # this takes into consider "max lake depth" in years where lake depth changes due to drought, etc.
 # this accounts for some years in ex: Sparkling where the lake elevation shows a change of something like 2 meters over the long term trend
 
-data.agg.orig <- read.csv("./Data/wisconsin_under_ice_aggregate_lakes.csv", stringsAsFactors = FALSE)
+data.agg.orig <- read.csv("Data/Original/wisconsin_under_ice_aggregate_lakes.csv", stringsAsFactors = FALSE)
 
 data.agg<-data.agg.orig %>% rename(lakeid = lakename)
 
@@ -13,7 +13,7 @@ data.agg$lakeid <- gsub("Big Muskellunge Lake", "Big Musky Lake", data.agg$lakei
 from_agg <- data.agg %>% group_by(lakeid) %>% summarize(max_depth = max(lakemaxdepth)) %>% as.data.frame()
 
 
-lake <- read.csv("./Data/north_temperate_lakes_lter__lake_levels_ALL.csv", stringsAsFactors = FALSE)
+lake <- read.csv("Data/Original/north_temperate_lakes_lter__lake_levels_ALL.csv", stringsAsFactors = FALSE)
 
 #assuming maximum ever lake elevation is corresponding to what we get as lake max depth in synthesis agg data for these lakes
 maximums <- lake  %>% group_by(lakeid)  %>% summarize(max_level_elev = max(llevel_elevation)) %>% as.data.frame()
@@ -68,5 +68,5 @@ full <- full %>% mutate(maxdepth.wintert = fall_elev - offset)
 
 final_elevs <- full %>% select(lakeid, yr_winter, maxdepth.wintert) %>% rename(maxdepth.t = maxdepth.wintert)
 
-write.csv(final_elevs, "./Data/final_elevs.csv", row.names = FALSE)
+write.csv(final_elevs, "Data/Outputs/final_elevs.csv", row.names = FALSE)
 

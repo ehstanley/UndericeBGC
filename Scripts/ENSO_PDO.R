@@ -8,9 +8,9 @@
 
 #read in PDO data
 setwd(data_dir)
-data.agg.orig <- read.csv("./Data/wisconsin_under_ice_aggregate_lakes.csv", stringsAsFactors = FALSE)
+data.agg.orig <- read.csv("./Data/Original/wisconsin_under_ice_aggregate_lakes.csv", stringsAsFactors = FALSE)
 
-PDO.orig <- read.csv("PDO.csv", stringsAsFactors = FALSE)
+PDO.orig <- read.csv("./Data/Outputs/PDO.csv", stringsAsFactors = FALSE)
 PDO<-PDO.orig
 PDO<-PDO %>% gather(month,value,-YEAR)
 PDO_meanprev<-PDO %>%
@@ -42,7 +42,7 @@ PDO<-PDO5
 
 #### Oceanic Nino Index ####
 
-ONI.orig <- read.csv("ONI.csv", stringsAsFactors = FALSE)
+ONI.orig <- read.csv("./Data/Outputs/ONI.csv", stringsAsFactors = FALSE)
 ONI<-ONI.orig
 ONI<-ONI %>% gather(month,value,-YEAR)
 ONI_meanprev<-ONI %>%
