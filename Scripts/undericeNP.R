@@ -58,7 +58,7 @@ data.elevs.orig <- read.csv("Data/Outputs/final_elevs.csv", stringsAsFactors = F
 data.elevs <- data.elevs.orig %>% rename(year4 = yr_winter)
 
 # physical limnology data for LTER lakes
-data.lter.phys.orig <- read.csv("Data/Originals/physical_limnology_of_the_north_temperate_lakes_primary_study_lakes_ALL.csv", 
+data.lter.phys.orig <- read.csv("Data/Original/physical_limnology_of_the_north_temperate_lakes_primary_study_lakes_ALL.csv", 
                                 stringsAsFactors = FALSE)
 
 data.lter.phys <- data.lter.phys.orig
@@ -312,7 +312,7 @@ data.lter.nutrients<-subset(data.lter.nutrients,!data.lter.nutrients$lakeid %in%
 data.lter.nutrients <- dplyr::rename(data.lter.nutrients, lakename = lakeid, year = year4)
 data.lter.nutrients$sampledate <- as.Date(data.lter.nutrients$sampledate, format = "%m/%d/%Y")
 
-#calculates days since water year (?) oct. 1
+#calculates days since water year (Oct. 1)
 #(doesn't include leap years)
 data.lter.nutrients$daynum_wateryr<-data.lter.nutrients$daynum+round(365*0.25,digits=0)
 data.lter.nutrients$daynum_wateryr[which(data.lter.nutrients$daynum_wateryr>365)]<-365-data.lter.nutrients$daynum_wateryr[which(data.lter.nutrients$daynum_wateryr>365)]
@@ -337,7 +337,6 @@ data.agg.filt <- data.agg %>% select(year, season, lakename, stationlat, station
                                                                    avetotphos, avetotdissphos, avetotnitro, avetotdissnitro)
 
 #create unique Y-m-d date for start and end to match/merge/filter with NTL-LTER dataset
-
 data.agg.filt$start.month.num <- match(data.agg.filt$startmonth, month.abb)
 data.agg.filt$end.month.num <- match(data.agg.filt$endmonth, month.abb)
 
@@ -348,12 +347,10 @@ data.agg.filt <- data.agg.filt %>%
           -periodn, -stationlat, -stationlong)
 
 #remove instances where all vars of interest are NA
-
 data.agg.filt.nutrients <- data.agg.filt %>% filter(!is.na(avetotphos) | !is.na(avetotdissphos) | !is.na(avetotnitro) | !is.na(avetotdissnitro))
 
 #this is the df of interest in terms of seasonal averages
 #use a subset - just dates - to limit NTL-LTER dataset to only samples of interest in terms of seasons
-
 data.agg.cut <- data.agg.filt.nutrients %>% select(season, lakename, sampledepth, photicdepth, startdate, start.month.num, enddate, end.month.num)
 
 
@@ -363,45 +360,26 @@ data.agg.cut <- data.agg.filt.nutrients %>% select(season, lakename, sampledepth
 ################################################################################
 
 #this will be huge and unwieldy to begin with 
-
 data.merge <- merge(data.agg.cut, data.lter.nutrients, by = "lakename")
 
 data.subset <- subset(data.merge, sampledate <= enddate & sampledate >= startdate)
 
 #sample month and year
-
 data.subset <- data.subset %>% mutate(sample.month = as.integer(format(sampledate, "%m")),
                                       sampleyear = as.integer(format(sampledate, "%Y")))
-                                      #to97 = ifelse(sampleyear <= 1997, "yes", "no"))
 
-#sample date - time since start of iceon (e.g. month diff between start of iceon and sample month)
-
+#only iceon season
 data.subset.ice <- data.subset %>% 
                     filter(season == "iceon")
 
-#start month num is either 11, 12, or 1
-#end month num is 2-5
-#try adding 3...adjusting for 12 months total (so +3-12 = -9 for 11 or 12)
-
-#this was for monthly for plotting...may be legacy (don't think need anymore?)
-
+#calculate days since iceon start
 data.subset.ice <- data.subset.ice %>% 
-                #adjust months
                 mutate(days.since.iceon.start = sampledate - startdate,
-                       days.since.iceon.start = as.integer(days.since.iceon.start)) #,
-                       #start.month.num.adj = ifelse(start.month.num == 1, start.month.num + 3, start.month.num - 9),
-                       #end.month.num.adj = end.month.num +3,
-                       #sample.month.adj = ifelse(sample.month == 11, sample.month - 9, sample.month + 3),
-                #find difference
-                       #months.since.iceon.start = sample.month.adj - start.month.num.adj)
+                       days.since.iceon.start = as.integer(days.since.iceon.start)) 
 
 data.subset.ice$days.since.iceon.start<-as.numeric(data.subset.ice$days.since.iceon.start)
 
-#yep, looks like it works...
-
-#data.subset.ice <- data.subset.ice %>% 
-                    #select(-start.month.num.adj, -end.month.num.adj, - sample.month.adj)
-
+#rename
 data.subset.ice <- dplyr::rename(data.subset.ice, NO3N=no3no2, NH4N=nh4, TDN=totnf, TN=totnuf, TDP=totpf, TP=totpuf)
 data.subset.ice <- dplyr::mutate(data.subset.ice, DIN=NO3N+NH4N, DON=TDN-NO3N-NH4N)
 
@@ -504,7 +482,6 @@ data.NP.shallow <- data.NP.shallow %>%
                    wtemp=mean(wtemp,na.rm=TRUE)) %>%
   #select columns of interest
   select(lakename, year, sampledate,days.since.iceon.start, daynum_wateryr, 
-#         maxdepth.actual, 
          NO3N, NH4N, DIN, DON, TDN, 
          TDP, TN, TP, o2,O2_sum,wtemp)#,UMLbottom)
 
@@ -518,7 +495,6 @@ data.NP.deep<-subset(data.N.iceon,
 
 data.NP.deep <- data.NP.deep %>%
   group_by(lakename, year, sampledate,days.since.iceon.start, daynum_wateryr, 
-#           maxdepth, 
            O2_sum) %>% #,UMLbottom) %>%
   #find average N-type and P
   dplyr::summarize(NO3N=mean(NO3N,na.rm=TRUE), 
@@ -533,7 +509,6 @@ data.NP.deep <- data.NP.deep %>%
                    wtemp=mean(wtemp,na.rm=TRUE)) %>%
   #select columns of interest
   select(lakename, year, sampledate,days.since.iceon.start, daynum_wateryr, 
-#         maxdepth, 
          NO3N, NH4N, DIN, DON, TDN, 
          TDP, TN, TP, o2,O2_sum,wtemp)#,UMLbottom)
 
@@ -546,7 +521,6 @@ data.NP.middle<-subset(data.N.iceon,
 
 data.NP.middle <- data.NP.middle %>%
   group_by(lakename, year, sampledate,days.since.iceon.start, daynum_wateryr, 
-           #           maxdepth, 
            O2_sum) %>% #,UMLbottom) %>%
   #find average N-type and P
   dplyr::summarize(NO3N=mean(NO3N,na.rm=TRUE), 
@@ -561,7 +535,6 @@ data.NP.middle <- data.NP.middle %>%
                    wtemp=mean(wtemp,na.rm=TRUE)) %>%
   #select columns of interest
   select(lakename, year, sampledate,days.since.iceon.start, daynum_wateryr, 
-         #         maxdepth, 
          NO3N, NH4N, DIN, DON, TDN, 
          TDP, TN, TP, o2,O2_sum,wtemp)#,UMLbottom)
 
@@ -587,8 +560,7 @@ data.NP.hyps<- data.NP.hyps %>%
                    select(-depth) %>%
                    group_by(lakename, year,sampledate,days.since.iceon.start,maxdepth.t,#UMLbottom,
                             O2_sum) %>% 
-                   #summarize - mean N type weighted by depth
-                   #
+                   #summarize - hypsometrically weighted nutrient concentrations
                    dplyr::summarize(
                     ######## NO3N ########
                     NO3N.wt.middle = mean(NO3N[which(middlelayerTF==1)],na.rm=TRUE)*(lower.bound[1]-upper.bound[1])/maxdepth.t[1],
@@ -749,7 +721,7 @@ plot.DINTDP.O <-  ggplot(dataplot, aes(x=o2, y=log10(NP_diss), colour=method)) +
 #  ggtitle("Winter N:P")
 plot.DINTDP.O
 
-
+#all lakes together 
 ggplot(dataplot, aes(x=o2, y = log10(NP_diss))) +
   geom_point() +
   geom_smooth() +
